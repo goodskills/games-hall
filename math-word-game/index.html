@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>学霸小勇士 - 广州天河三年级专注力特训营</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg-grad: radial-gradient(circle at 50% 15%, #1e293b 0%, #0b1329 100%);
+    --border-color: rgba(255, 255, 255, 0.15);
+    --accent-gold: #fbbf24;
+    --accent-blue: #38bdf8;
+    --accent-green: #4ade80;
+    --accent-red: #f87171;
+    --accent-purple: #c084fc;
+    --text-main: #f8fafc;
+    --text-sub: #94a3b8;
+  }
+
+  * {
+    margin: 0; padding: 0; box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg-grad);
+    color: var(--text-main);
+    font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px;
+    overflow-x: hidden;
+  }
+
+  .game-container {
+    width: min(96vw, 450px);
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 20px 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 620px;
+  }
+
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 14px;
+  }
+  .stat-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .stat-badge .num {
+    font-weight: 800;
+    color: var(--accent-gold);
+  }
+
+  .view-panel {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    justify-content: center;
+  }
+  .view-panel.active {
+    display: flex;
+  }
+
+  .home-title {
+    text-align: center;
+    margin: 15px 0 6px 0;
+  }
+  .home-title h1 {
+    font-size: 27px;
+    letter-spacing: 2px;
+    background: linear-gradient(180deg, #fff, #fbbf24);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .home-title p {
+    font-size: 13px;
+    color: var(--text-sub);
+    letter-spacing: 2px;
+    margin-top: 4px;
+  }
+
+  .banner-knight {
+    font-size: 56px;
+    text-align: center;
+    margin: 8px 0;
+    filter: drop-shadow(0 6px 16px rgba(251, 191, 36, 0.35));
+    animation: float 2.4s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .mode-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 14px 0;
+  }
+  .mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-radius: 18px;
+    padding: 15px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+  }
+  .mode-btn:active { transform: scale(0.97); }
+  .mode-btn.word {
+    border-color: rgba(56, 189, 248, 0.4);
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(56, 189, 248, 0.03));
+  }
+  .mode-btn.math {
+    border-color: rgba(251, 191, 36, 0.4);
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(251, 191, 36, 0.03));
+  }
+  .mode-btn .icon { font-size: 36px; }
+  .mode-btn .info h3 { font-size: 17px; font-weight: 700; }
+  .mode-btn .info p { font-size: 12px; color: var(--text-sub); margin-top: 3px; line-height: 1.4; }
+
+  /* 难度选择面板 */
+  .level-title {
+    text-align: center;
+    margin: 6px 0 14px 0;
+  }
+  .level-title h2 { font-size: 21px; font-weight: 800; }
+  .level-title p { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+  .level-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .level-btn {
+    border-radius: 18px;
+    padding: 18px 10px;
+    text-align: center;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    transition: all 0.2s;
+  }
+  .level-btn:active { transform: scale(0.95); }
+  .level-btn .lv-icon { font-size: 34px; display: block; margin-bottom: 8px; }
+  .level-btn .lv-name { font-size: 17px; font-weight: 800; display: block; }
+  .level-btn .lv-desc { font-size: 11px; color: var(--text-sub); display: block; margin-top: 5px; line-height: 1.45; }
+  .level-btn.lv1 { border-color: rgba(74, 222, 128, 0.45); background: linear-gradient(160deg, rgba(74, 222, 128, 0.16), rgba(74, 222, 128, 0.04)); }
+  .level-btn.lv2 { border-color: rgba(251, 191, 36, 0.45); background: linear-gradient(160deg, rgba(251, 191, 36, 0.16), rgba(251, 191, 36, 0.04)); }
+  .level-btn.lv3 { border-color: rgba(248, 113, 113, 0.45); background: linear-gradient(160deg, rgba(248, 113, 113, 0.16), rgba(248, 113, 113, 0.04)); }
+  .level-btn.lv4 { border-color: rgba(192, 132, 252, 0.45); background: linear-gradient(160deg, rgba(192, 132, 252, 0.16), rgba(192, 132, 252, 0.04)); grid-column: 1 / -1; }
+
+  .game-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .exit-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: var(--text-sub);
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .progress-bar-wrap {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #38bdf8, #4ade80);
+    transition: width 0.3s;
+  }
+
+  .track-wrap {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 14px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+  .track-rail {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    position: relative;
+    margin: 0 10px;
+  }
+  .runner-icon {
+    position: absolute;
+    top: -14px;
+    left: 0%;
+    font-size: 22px;
+    transition: left 0.4s ease-out;
+    transform: translateX(-50%);
+  }
+
+  .quiz-box {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 18px 16px;
+    text-align: center;
+    margin-bottom: 12px;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+  .quiz-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    background: rgba(251, 191, 36, 0.15);
+    color: var(--accent-gold);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+  }
+  .quiz-tag.fill {
+    background: rgba(192, 132, 252, 0.15);
+    color: var(--accent-purple);
+    border-color: rgba(192, 132, 252, 0.35);
+  }
+  .quiz-tag.dialogue {
+    background: rgba(56, 189, 248, 0.15);
+    color: var(--accent-blue);
+    border-color: rgba(56, 189, 248, 0.35);
+  }
+  .quiz-main-text {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #fff;
+    margin: 4px 0;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  .quiz-main-text .blank {
+    color: var(--accent-gold);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    padding: 0 4px;
+  }
+  .quiz-sub-text {
+    font-size: 14px;
+    color: #38bdf8;
+    margin-top: 6px;
+    line-height: 1.45;
+  }
+  .quiz-phonetic {
+    font-size: 13px;
+    color: #a78bfa;
+    margin-top: 4px;
+  }
+
+  /* 再听一遍按钮 */
+  .speak-again {
+    align-self: center;
+    display: none;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38bdf8;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 7px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    margin-bottom: 12px;
+  }
+  .speak-again.show { display: inline-block; }
+  .speak-again:active { transform: scale(0.95); }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .opt-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 16px;
+    padding: 14px 10px;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .opt-btn:active { transform: scale(0.95); }
+  .opt-btn.correct {
+    background: rgba(74, 222, 128, 0.35) !important;
+    border-color: #4ade80 !important;
+    color: #4ade80;
+    animation: pulse-green 0.3s;
+  }
+  .opt-btn.wrong {
+    background: rgba(248, 113, 113, 0.35) !important;
+    border-color: #f87171 !important;
+    color: #f87171;
+    animation: shake 0.3s;
+  }
+  @keyframes pulse-green {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  .result-box {
+    text-align: center;
+    padding: 20px 10px;
+  }
+  .result-badge {
+    font-size: 64px;
+    margin-bottom: 10px;
+    animation: bounce 0.8s infinite alternate;
+  }
+  @keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-10px); }
+  }
+  .result-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--accent-gold);
+    margin-bottom: 8px;
+  }
+  .result-desc {
+    font-size: 14px;
+    color: var(--text-sub);
+    line-height: 1.6;
+    margin-bottom: 22px;
+  }
+  .result-stats {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 22px;
+  }
+  .result-item .val {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent-blue);
+  }
+  .result-item .lbl {
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-top: 4px;
+  }
+  .btn-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .primary-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #0f172a;
+    font-weight: 800;
+    font-size: 17px;
+    padding: 14px;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
+    transition: transform 0.15s;
+  }
+  .primary-btn:active { transform: scale(0.97); }
+  .ghost-btn {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+    font-weight: 700;
+    font-size: 15px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    cursor: pointer;
+  }
+  .ghost-btn:active { transform: scale(0.97); }
+
+  .sound-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .back-arcade {
+    text-align: center;
+    margin-top: 14px;
+  }
+  .back-arcade a {
+    color: var(--text-sub);
+    font-size: 13px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .back-arcade a:hover { color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="game-container">
+  <div class="top-bar">
+    <div class="stat-badge">
+      <span>⭐ 星币:</span>
+      <span class="num" id="totalCoins">0</span>
+    </div>
+    <div class="stat-badge">
+      <span>🔥 连胜:</span>
+      <span class="num" id="streakCount">0</span>
+    </div>
+    <button class="sound-btn" id="soundToggle" title="音效开关">🔊</button>
+  </div>
+
+  <!-- 1. 主页面板 -->
+  <div class="view-panel active" id="panelHome">
+    <div class="banner-knight">🦁</div>
+    <div class="home-title">
+      <h1>学霸小勇士</h1>
+      <p>广州天河三年级 · 专注力校考特训</p>
+    </div>
+
+    <div class="mode-cards">
+      <div class="mode-btn word" onclick="showLevelPicker('word')">
+        <div class="icon">🇬🇧</div>
+        <div class="info">
+          <h3>三年级英语校考大通关</h3>
+          <p>四档难度: 中英互译 / 字母填空<br>情境对话 / 综合混合 · 答题后真人发音跟读<br><span style="color:#38bdf8;">广州教科版/外研版教材匹配</span></p>
+        </div>
+      </div>
+
+      <div class="mode-btn math" onclick="showLevelPicker('math')">
+        <div class="icon">🏎️</div>
+        <div class="info">
+          <h3>极速口算小赛车</h3>
+          <p>四档难度: 口算速算 / 带余除法与混合运算<br>填未知数与应用题 / 综合抗粗心挑战<br><span style="color:#fbbf24;">10题限时全对冲刺</span></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="back-arcade">
+      <a href="../index.html">‹ 返回游戏厅大厅</a>
+    </div>
+  </div>
+
+  <!-- 2. 难度选择面板 -->
+  <div class="view-panel" id="panelLevel">
+    <div class="level-title">
+      <h2 id="levelTitle">选择挑战难度</h2>
+      <p id="levelSub">循序渐进，每关都能涨星币！</p>
+    </div>
+    <div class="level-cards" id="levelCards"></div>
+    <div style="text-align:center; margin-top:16px;">
+      <button class="exit-btn" onclick="returnHome()">‹ 返回科目选择</button>
+    </div>
+  </div>
+
+  <!-- 3. 游戏面板 -->
+  <div class="view-panel" id="panelPlay">
+    <div class="game-head">
+      <button class="exit-btn" onclick="returnHome()">✕ 放弃返回</button>
+      <div style="font-size:14px; color:var(--accent-gold); font-weight:700;" id="qIndexText">第 1 / 10 题</div>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="track-wrap">
+      <span style="font-size:18px;">🚩</span>
+      <div class="track-rail">
+        <div class="runner-icon" id="runnerIcon">🦁</div>
+      </div>
+      <span style="font-size:18px;">🏆</span>
+    </div>
+
+    <div class="quiz-box">
+      <div class="quiz-tag" id="quizTag">单词词义</div>
+      <div class="quiz-main-text" id="quizMain">apple</div>
+      <div class="quiz-sub-text" id="quizSub">音节拆分提示</div>
+      <div class="quiz-phonetic" id="quizExtra">/ ˈæpl /</div>
+    </div>
+
+    <button class="speak-again" id="speakAgainBtn" onclick="speakCurrent()">🔊 再听一遍</button>
+
+    <div class="options-grid" id="optionsBox"></div>
+  </div>
+
+  <!-- 4. 结算面板 -->
+  <div class="view-panel" id="panelResult">
+    <div class="result-box">
+      <div class="result-badge" id="resBadge">🏆</div>
+      <div class="result-title" id="resTitle">挑战大成功！</div>
+      <div class="result-desc" id="resDesc">哇！你的专注力太惊人了！</div>
+
+      <div class="result-stats">
+        <div class="result-item">
+          <div class="val" id="resCorrect">10/10</div>
+          <div class="lbl">答对题数</div>
+        </div>
+        <div class="result-item">
+          <div class="val" id="resAccuracy">100%</div>
+          <div class="lbl">正确率</div>
+        </div>
+        <div class="result-item">
+          <div class="val" id="resEarnCoins">+50</div>
+          <div class="lbl">获得星币</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="primary-btn" onclick="replaySame()">⚔️ 再战一局 (同难度)</button>
+        <button class="ghost-btn" onclick="showPanel('panelHome')">🏠 换科目 / 换难度</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= 音效: 8-bit 原生电玩合成 ================= */
+class SoundFx {
+  constructor() { this.ctx = null; this.enabled = true; }
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  }
+  playTone(freq, type, duration, delay = 0) {
+    if (!this.enabled || !this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const t = this.ctx.currentTime + delay;
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.15, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + duration);
+    } catch(e) {}
+  }
+  correct() {
+    this.init();
+    this.playTone(523.25, 'triangle', 0.1, 0);
+    this.playTone(659.25, 'triangle', 0.1, 0.08);
+    this.playTone(783.99, 'triangle', 0.2, 0.16);
+  }
+  wrong() {
+    this.init();
+    this.playTone(220, 'sawtooth', 0.18, 0);
+    this.playTone(180, 'sawtooth', 0.25, 0.12);
+  }
+  win() {
+    this.init();
+    [440, 554, 659, 880].forEach((f, i) => this.playTone(f, 'sine', 0.2, i * 0.12));
+  }
+}
+const sfx = new SoundFx();
+
+const soundToggle = document.getElementById('soundToggle');
+soundToggle.addEventListener('click', () => {
+  sfx.init();
+  sfx.enabled = !sfx.enabled;
+  soundToggle.textContent = sfx.enabled ? '🔊' : '🔇';
+});
+
+/* ================= 语音朗读: Web Speech API ================= */
+let enVoice = null;
+function loadVoices() {
+  if (!('speechSynthesis' in window)) return;
+  const voices = speechSynthesis.getVoices();
+  // 优先美式英语，其次任意英语
+  enVoice = voices.find(v => v.lang === 'en-US') ||
+            voices.find(v => v.lang && v.lang.startsWith('en')) || null;
+}
+if ('speechSynthesis' in window) {
+  loadVoices();
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
+function speakEnglish(text, rate) {
+  if (!('speechSynthesis' in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = rate || 0.82; // 稍慢，方便孩子跟读
+    if (enVoice) u.voice = enVoice;
+    speechSynthesis.speak(u);
+  } catch(e) {}
+}
+
+/* ============================================================
+   广州天河区三年级英语题库（广州教科版 Success with English / 外研社）
+   ============================================================ */
+const GZ_GRADE3_WORDS = [
+  { word: 'pencil', cn: '铅笔', miss: 'p_nc_l', missAns: 'e, i', distract: ['a, i', 'e, e', 'o, i'], syllable: 'pen·cil', phon: '/ˈpensl/' },
+  { word: 'ruler', cn: '尺子', miss: 'r_l_r', missAns: 'u, e', distract: ['a, e', 'o, a', 'u, o'], syllable: 'ru·ler', phon: '/ˈruːlər/' },
+  { word: 'eraser', cn: '橡皮', miss: '_ras_r', missAns: 'e, e', distract: ['a, e', 'e, a', 'i, e'], syllable: 'e·ra·ser', phon: '/ɪˈreɪzər/' },
+  { word: 'schoolbag', cn: '书包', miss: 'sch__lbag', missAns: 'oo', distract: ['ou', 'ee', 'oa'], syllable: 'school·bag', phon: '/ˈskuːlbæɡ/' },
+  { word: 'blackboard', cn: '黑板', miss: 'bl_ckboard', missAns: 'a', distract: ['e', 'o', 'u'], syllable: 'black·board', phon: '/ˈblækbɔːd/' },
+  { word: 'classroom', cn: '教室', miss: 'cl_ssr__m', missAns: 'a, oo', distract: ['e, oo', 'a, ou', 'u, ee'], syllable: 'class·room', phon: '/ˈklɑːsruːm/' },
+  { word: 'mouth', cn: '嘴巴', miss: 'm__th', missAns: 'ou', distract: ['au', 'ow', 'oo'], syllable: 'mouth', phon: '/maʊθ/' },
+  { word: 'nose', cn: '鼻子', miss: 'n_s_', missAns: 'o, e', distract: ['a, e', 'o, a', 'u, e'], syllable: 'nose', phon: '/nəʊz/' },
+  { word: 'head', cn: '头', miss: 'h__d', missAns: 'ea', distract: ['ee', 'ai', 'oa'], syllable: 'head', phon: '/hed/' },
+  { word: 'hand', cn: '手', miss: 'h_nd', missAns: 'a', distract: ['e', 'o', 'u'], syllable: 'hand', phon: '/hænd/' },
+  { word: 'eye', cn: '眼睛', miss: '_y_', missAns: 'e, e', distract: ['a, e', 'i, e', 'e, a'], syllable: 'eye', phon: '/aɪ/' },
+  { word: 'family', cn: '家庭', miss: 'f_m_ly', missAns: 'a, i', distract: ['e, i', 'a, e', 'o, y'], syllable: 'fam·i·ly', phon: '/ˈfæməli/' },
+  { word: 'father', cn: '爸爸', miss: 'f_th_r', missAns: 'a, e', distract: ['o, e', 'a, o', 'e, e'], syllable: 'fa·ther', phon: '/ˈfɑːðər/' },
+  { word: 'mother', cn: '妈妈', miss: 'm_th_r', missAns: 'o, e', distract: ['u, e', 'a, e', 'o, o'], syllable: 'mo·ther', phon: '/ˈmʌðər/' },
+  { word: 'brother', cn: '兄弟', miss: 'br_th_r', missAns: 'o, e', distract: ['a, e', 'u, e', 'o, a'], syllable: 'bro·ther', phon: '/ˈbrʌðər/' },
+  { word: 'sister', cn: '姐妹', miss: 's_st_r', missAns: 'i, e', distract: ['e, e', 'i, a', 'a, e'], syllable: 'sis·ter', phon: '/ˈsɪstər/' },
+  { word: 'friend', cn: '朋友', miss: 'fr__nd', missAns: 'ie', distract: ['ei', 'ee', 'ea'], syllable: 'friend', phon: '/frend/' },
+  { word: 'eleven', cn: '十一', miss: '_l_v_n', missAns: 'e, e, e', distract: ['a, e, e', 'e, a, e', 'i, e, e'], syllable: 'e·lev·en', phon: '/ɪˈlevn/' },
+  { word: 'twelve', cn: '十二', miss: 'tw_lv_', missAns: 'e, e', distract: ['a, e', 'e, a', 'o, e'], syllable: 'twelve', phon: '/twelv/' },
+  { word: 'twenty', cn: '二十', miss: 'tw_nty', missAns: 'e', distract: ['a', 'o', 'i'], syllable: 'twen·ty', phon: '/ˈtwenti/' },
+  { word: 'morning', cn: '早晨', miss: 'm_rn_ng', missAns: 'o, i', distract: ['a, i', 'o, e', 'u, i'], syllable: 'morn·ing', phon: '/ˈmɔːnɪŋ/' },
+  { word: 'yellow', cn: '黄色', miss: 'y_ll_w', missAns: 'e, o', distract: ['a, o', 'e, a', 'i, o'], syllable: 'yel·low', phon: '/ˈjeləʊ/' },
+  { word: 'teacher', cn: '老师', miss: 't_ch_r', missAns: 'ea, e', distract: ['ee, e', 'ea, a', 'i, e'], syllable: 'teach·er', phon: '/ˈtiːtʃər/' },
+  { word: 'student', cn: '学生', miss: 'st_d_nt', missAns: 'u, e', distract: ['u, a', 'o, e', 'a, e'], syllable: 'stu·dent', phon: '/ˈstjuːdnt/' }
+];
+
+const GZ_DIALOGUES = [
+  { main: "— Hello, what's your name?<br>— My name is <span class='blank'>____</span>.", speakA: "Hello, what's your name?", speakB: "My name is", sub: "情境: 询问对方名字", correct: "Mike", options: ["Mike", "ruler", "nine", "blue"], extra: "考点: 人名与自我介绍" },
+  { main: "— Nice to meet you!<br>— Nice to meet you, <span class='blank'>____</span>.", speakA: "Nice to meet you!", speakB: "Nice to meet you,", sub: "情境: 礼貌应答初次见面", correct: "too", options: ["too", "two", "to", "toy"], extra: "考点: too (也) 的用法" },
+  { main: "— How old are you?<br>— I'm <span class='blank'>____</span> years old.", speakA: "How old are you?", speakB: "I'm years old.", sub: "情境: 询问年龄", correct: "nine", options: ["nine", "pen", "desk", "dog"], extra: "考点: 询问年龄的回答" },
+  { main: "— Good morning, Miss White.<br>— Good <span class='blank'>____</span>, children.", speakA: "Good morning, Miss White.", speakB: "Good, children.", sub: "情境: 早上师生打招呼", correct: "morning", options: ["morning", "night", "bye", "afternoon"], extra: "考点: 晨读常用日常问候" },
+  { main: "— Who is that woman?<br>— She is my <span class='blank'>____</span>.", speakA: "Who is that woman?", speakB: "She is my", sub: "情境: 询问女性长辈", correct: "mother", options: ["mother", "father", "brother", "grandpa"], extra: "考点: 家庭成员与 She 匹配" },
+  { main: "— Who is that man?<br>— He is my <span class='blank'>____</span>.", speakA: "Who is that man?", speakB: "He is my", sub: "情境: 询问男性长辈", correct: "father", options: ["father", "mother", "sister", "grandma"], extra: "考点: 家庭成员与 He 匹配" },
+  { main: "— <span class='blank'>____</span> many pencils do you have?<br>— I have four pencils.", speakA: "many pencils do you have?", speakB: "I have four pencils.", sub: "情境: 询问物品数量", correct: "How", options: ["How", "What", "Who", "Where"], extra: "考点: How many (多少个)" },
+  { main: "— Can I have some <span class='blank'>____</span>?<br>— Here you are.", speakA: "Can I have some?", speakB: "Here you are.", sub: "情境: 口渴了想喝水", correct: "water", options: ["water", "pencil", "book", "chair"], extra: "考点: 饮料食物词汇" },
+  { main: "— Stand <span class='blank'>____</span>, please.<br>— Yes, teacher.", speakA: "Stand, please.", speakB: "Yes, teacher.", sub: "情境: 课堂指令(起立)", correct: "up", options: ["up", "down", "in", "on"], extra: "考点: Stand up 起立" },
+  { main: "— Point to your <span class='blank'>____</span> (眼睛).<br>— This is my eye.", speakA: "Point to your", speakB: "This is my eye.", sub: "情境: 身体部位指令", correct: "eye", options: ["eye", "bag", "cat", "desk"], extra: "考点: 身体部位指令" }
+];
+
+/* ============================================================
+   游戏状态
+   ============================================================ */
+const state = {
+  coins: parseInt(localStorage.getItem('xb_coins') || '0', 10),
+  streak: 0,
+  curSubject: 'word',
+  curLevel: 'basic',
+  qIndex: 0,
+  totalQ: 10,
+  correctCount: 0,
+  questions: [],
+  locked: false,
+  currentSpeakText: null
+};
+
+document.getElementById('totalCoins').textContent = state.coins;
+
+function saveCoins() {
+  localStorage.setItem('xb_coins', state.coins);
+  document.getElementById('totalCoins').textContent = state.coins;
+}
+function updateStreak(isCorrect) {
+  state.streak = isCorrect ? state.streak + 1 : 0;
+  document.getElementById('streakCount').textContent = state.streak;
+}
+function showPanel(panelId) {
+  document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(panelId).classList.add('active');
+}
+function returnHome() {
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  showPanel('panelHome');
+}
+
+/* ============================================================
+   英语题型生成器
+   ============================================================ */
+
+/* 初级: 中英互译 (50% 英→中, 50% 中→英) */
+function genWordBasic() {
+  const item = GZ_GRADE3_WORDS[Math.floor(Math.random() * GZ_GRADE3_WORDS.length)];
+  if (Math.random() < 0.5) {
+    const dist = new Set([item.cn]);
+    while (dist.size < 4) dist.add(GZ_GRADE3_WORDS[Math.floor(Math.random() * GZ_GRADE3_WORDS.length)].cn);
+    return {
+      type: 'match', tag: '初级 · 英译中', tagClass: '',
+      main: item.word, sub: `音节拆分: ${item.syllable}`, extra: item.phon,
+      options: Array.from(dist).sort(() => Math.random() - 0.5),
+      correct: item.cn, speakText: item.word
+    };
+  } else {
+    const dist = new Set([item.word]);
+    while (dist.size < 4) dist.add(GZ_GRADE3_WORDS[Math.floor(Math.random() * GZ_GRADE3_WORDS.length)].word);
+    return {
+      type: 'match', tag: '初级 · 中译英', tagClass: '',
+      main: item.cn, sub: `选出正确的英语单词`, extra: `提示: ${item.syllable} ${item.phon}`,
+      options: Array.from(dist).sort(() => Math.random() - 0.5),
+      correct: item.word, speakText: item.word
+    };
+  }
+}
+
+/* 中级: 单词字母填空 */
+function genWordMid() {
+  const item = GZ_GRADE3_WORDS[Math.floor(Math.random() * GZ_GRADE3_WORDS.length)];
+  const options = [item.missAns, ...item.distract].sort(() => Math.random() - 0.5);
+  return {
+    type: 'fill', tag: '中级 · 字母拼写填空', tagClass: 'fill',
+    main: item.miss, sub: `中文提示: 【${item.cn}】`,
+    extra: `完整单词: ${item.word} ${item.phon}`,
+    options, correct: item.missAns, speakText: item.word
+  };
+}
+
+/* 高级: 情境对话填空 */
+function genWordHigh() {
+  const item = GZ_DIALOGUES[Math.floor(Math.random() * GZ_DIALOGUES.length)];
+  return {
+    type: 'dialogue', tag: '高级 · 情境对话填空', tagClass: 'dialogue',
+    main: item.main, sub: item.sub, extra: item.extra,
+    options: [...item.options].sort(() => Math.random() - 0.5),
+    correct: item.correct,
+    // 朗读完整对话: 把正确答案嵌回句子里
+    speakText: `${item.speakA} ${item.speakB.replace(/,?\s*$/, '')} ${item.correct}.`.replace(/\s+/g, ' ')
+  };
+}
+
+/* 综合: 三种混合 */
+function genWordMix() {
+  const r = Math.random();
+  if (r < 0.35) return genWordBasic();
+  if (r < 0.7) return genWordMid();
+  return genWordHigh();
+}
+
+/* ============================================================
+   数学题型生成器
+   ============================================================ */
+
+/* 数字选项生成器: 正确答案 + 抗粗心干扰项 */
+function numberOptions(ans) {
+  const dist = new Set([ans]);
+  let guard = 0;
+  while (dist.size < 4 && guard++ < 60) {
+    let offset = (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 4) + 1);
+    if (Math.random() > 0.6) offset = 10 * (Math.random() > 0.5 ? 1 : -1); // 进退位陷阱
+    const fake = ans + offset;
+    if (fake > 0 && fake !== ans) dist.add(fake);
+  }
+  return Array.from(dist).sort(() => Math.random() - 0.5).map(String);
+}
+
+/* 数学初级: 口算速算 */
+function genMathBasic() {
+  const types = ['add', 'sub', 'mul', 'div'];
+  const t = types[Math.floor(Math.random() * types.length)];
+  let qText = '', ans = 0, sub = '';
+  if (t === 'add') {
+    const a = Math.floor(Math.random() * 60) + 18;
+    const b = Math.floor(Math.random() * 60) + 15;
+    qText = `${a} + ${b} = ?`; ans = a + b; sub = '进位加法 · 心算小红点';
+  } else if (t === 'sub') {
+    const a = Math.floor(Math.random() * 70) + 25;
+    const b = Math.floor(Math.random() * (a - 10)) + 9;
+    qText = `${a} - ${b} = ?`; ans = a - b; sub = '退位减法 · 别忘借1';
+  } else if (t === 'mul') {
+    const a = Math.floor(Math.random() * 8) + 2;
+    const b = Math.floor(Math.random() * 8) + 2;
+    qText = `${a} × ${b} = ?`; ans = a * b; sub = '表内乘法 · 口诀要熟';
+  } else {
+    const b = Math.floor(Math.random() * 8) + 2;
+    const q = Math.floor(Math.random() * 8) + 2;
+    qText = `${b * q} ÷ ${b} = ?`; ans = q; sub = '表内除法 · 想乘算除';
+  }
+  return {
+    type: 'math', tag: '初级 · 口算速算', tagClass: '',
+    main: qText, sub, extra: '提示: 草稿纸点好进位借位',
+    options: numberOptions(ans), correct: String(ans), speakText: null
+  };
+}
+
+/* 数学中级: 带余除法 + 两步混合运算 */
+function genMathMid() {
+  if (Math.random() < 0.5) {
+    // 带余除法 (三年级重点): 选项 "商 x 余 y"
+    const b = Math.floor(Math.random() * 6) + 3;
+    const q = Math.floor(Math.random() * 6) + 3;
+    const r = Math.floor(Math.random() * (b - 1)) + 1;
+    const a = b * q + r;
+    const correct = `${q} 余 ${r}`;
+    const dist = new Set([correct]);
+    const cands = [`${q + 1} 余 ${r}`, `${q} 余 ${r + 1}`, `${q - 1} 余 ${b - 1}`, `${q + 1} 余 0`, `${q} 余 ${r + 2}`];
+    cands.sort(() => Math.random() - 0.5);
+    cands.forEach(c => { if (dist.size < 4 && c !== correct) dist.add(c); });
+    return {
+      type: 'math', tag: '中级 · 带余除法', tagClass: '',
+      main: `${a} ÷ ${b} = ?`, sub: '商几余几? (例: 7 余 3)', extra: '考点: 除数×商+余数=被除数',
+      options: Array.from(dist).sort(() => Math.random() - 0.5),
+      correct, speakText: null
+    };
+  } else {
+    // 两步混合运算 (先乘除后加减 / 括号)
+    const kind = Math.floor(Math.random() * 3);
+    let qText = '', ans = 0, sub = '';
+    if (kind === 0) {
+      const a = Math.floor(Math.random() * 8) + 2, b = Math.floor(Math.random() * 8) + 2;
+      const c = Math.floor(Math.random() * 20) + 5;
+      qText = `${a} × ${b} + ${c} = ?`; ans = a * b + c; sub = '先乘后加 · 运算顺序!';
+    } else if (kind === 1) {
+      const a = Math.floor(Math.random() * 8) + 3, b = Math.floor(Math.random() * 6) + 2;
+      const c = Math.floor(Math.random() * (a * b - 5)) + 2;
+      qText = `${a} × ${b} - ${c} = ?`; ans = a * b - c; sub = '先乘后减 · 运算顺序!';
+    } else {
+      const a = Math.floor(Math.random() * 8) + 2, b = Math.floor(Math.random() * 8) + 2;
+      const c = Math.floor(Math.random() * 5) + 2;
+      qText = `(${a} + ${b}) × ${c} = ?`; ans = (a + b) * c; sub = '先算括号 · 再乘';
+    }
+    return {
+      type: 'math', tag: '中级 · 两步混合运算', tagClass: '',
+      main: qText, sub, extra: '考点: 运算顺序是三年级大考点',
+      options: numberOptions(ans), correct: String(ans), speakText: null
+    };
+  }
+}
+
+/* 数学高级: 填未知数 + 简单应用题 */
+function genMathHigh() {
+  if (Math.random() < 0.5) {
+    // 填未知数 (等式平衡)
+    const kind = Math.floor(Math.random() * 4);
+    let qText = '', ans = 0, sub = '';
+    if (kind === 0) {
+      const b = Math.floor(Math.random() * 8) + 2, q = Math.floor(Math.random() * 8) + 3;
+      qText = `( ) × ${b} = ${b * q}`; ans = q; sub = '逆向思维: 积 ÷ 因数';
+    } else if (kind === 1) {
+      const a = Math.floor(Math.random() * 40) + 40, c = Math.floor(Math.random() * 30) + 10;
+      qText = `${a} - ( ) = ${c}`; ans = a - c; sub = '逆向思维: 被减数 - 差';
+    } else if (kind === 2) {
+      const c = Math.floor(Math.random() * 40) + 30, a = Math.floor(Math.random() * 30) + 10;
+      qText = `( ) + ${a} = ${c}`; ans = c - a; sub = '逆向思维: 和 - 加数';
+    } else {
+      const b = Math.floor(Math.random() * 8) + 2, q = Math.floor(Math.random() * 8) + 2;
+      qText = `${b * q} ÷ ( ) = ${q}`; ans = b; sub = '逆向思维: 被除数 ÷ 商';
+    }
+    return {
+      type: 'math', tag: '高级 · 填未知数', tagClass: '',
+      main: qText, sub, extra: '考点: 等式各部分关系',
+      options: numberOptions(ans), correct: String(ans), speakText: null
+    };
+  } else {
+    // 简单应用题
+    const apps = [
+      () => { const b = Math.floor(Math.random() * 7) + 3, n = Math.floor(Math.random() * 5) + 3; return { q: `每盒饼干有 ${b} 块，妈妈买了 ${n} 盒，一共有多少块?`, a: b * n, s: '乘法应用: 每份数 × 份数' }; },
+      () => { const n = (Math.floor(Math.random() * 5) + 3) * 2, p = Math.floor(Math.random() * 5) + 3; return { q: `有 ${n * p} 个苹果，平均分给 ${p} 个小朋友，每人分几个?`, a: n, s: '除法应用: 总数 ÷ 份数' }; },
+      () => { const a = Math.floor(Math.random() * 20) + 20, d = Math.floor(Math.random() * 10) + 4, u = Math.floor(Math.random() * 8) + 2; return { q: `公交车上有 ${a} 人，到站下去 ${d} 人又上来 ${u} 人，现在车上有多少人?`, a: a - d + u, s: '加减混合: 先减后加' }; },
+      () => { const d = Math.floor(Math.random() * 7) + 4, n = Math.floor(Math.random() * 4) + 3; return { q: `小明每天写 ${d} 个大字，写了 ${n} 天，一共写了多少个大字?`, a: d * n, s: '乘法应用: 每天 × 天数' }; }
+    ];
+    const item = apps[Math.floor(Math.random() * apps.length)]();
+    return {
+      type: 'math', tag: '高级 · 应用小达人', tagClass: '',
+      main: item.q, sub: item.s, extra: '考点: 读题两遍再动笔',
+      options: numberOptions(item.a), correct: String(item.a), speakText: null
+    };
+  }
+}
+
+/* 数学综合 */
+function genMathMix() {
+  const r = Math.random();
+  if (r < 0.3) return genMathBasic();
+  if (r < 0.65) return genMathMid();
+  return genMathHigh();
+}
+
+/* ============================================================
+   难度选择
+   ============================================================ */
+const LEVELS = {
+  word: {
+    title: '🇬🇧 英语校考大通关',
+    sub: '广州天河三年级 · 由易到难四档闯关',
+    levels: [
+      { id: 'basic', icon: '🟢', name: '初级', desc: '单词中英互译<br>建立信心', gen: genWordBasic },
+      { id: 'mid', icon: '🟡', name: '中级', desc: '单词字母填空<br>攻克拼写', gen: genWordMid },
+      { id: 'high', icon: '🔴', name: '高级', desc: '情境对话填空<br>校考交际', gen: genWordHigh },
+      { id: 'mix', icon: '🟣', name: '综合大闯关', desc: '全题型随机混合 · 完整模拟校考卷，检验真实实力！', gen: genWordMix }
+    ]
+  },
+  math: {
+    title: '🏎️ 极速口算小赛车',
+    sub: '三年级重点全覆盖 · 由易到难四档冲刺',
+    levels: [
+      { id: 'basic', icon: '🟢', name: '初级', desc: '口算速算<br>进退位加减·表内乘除', gen: genMathBasic },
+      { id: 'mid', icon: '🟡', name: '中级', desc: '带余除法<br>两步混合运算', gen: genMathMid },
+      { id: 'high', icon: '🔴', name: '高级', desc: '填未知数<br>应用题小达人', gen: genMathHigh },
+      { id: 'mix', icon: '🟣', name: '综合大冲刺', desc: '全题型随机混合 · 抗粗心终极挑战！', gen: genMathMix }
+    ]
+  }
+};
+
+function showLevelPicker(subject) {
+  sfx.init();
+  state.curSubject = subject;
+  const cfg = LEVELS[subject];
+  document.getElementById('levelTitle').textContent = cfg.title;
+  document.getElementById('levelSub').textContent = cfg.sub;
+  const box = document.getElementById('levelCards');
+  box.innerHTML = '';
+  cfg.levels.forEach((lv, i) => {
+    const div = document.createElement('div');
+    div.className = `level-btn lv${i + 1}`;
+    div.onclick = () => startGame(subject, lv.id);
+    div.innerHTML = `<span class="lv-icon">${lv.icon}</span><span class="lv-name">${lv.name}</span><span class="lv-desc">${lv.desc}</span>`;
+    box.appendChild(div);
+  });
+  showPanel('panelLevel');
+}
+
+/* ============================================================
+   游戏流程
+   ============================================================ */
+function startGame(subject, levelId) {
+  const lvCfg = LEVELS[subject].levels.find(l => l.id === levelId) || LEVELS[subject].levels[0];
+  state.curLevel = lvCfg.id;
+  state.qIndex = 0;
+  state.correctCount = 0;
+  state.questions = [];
+  state.locked = false;
+  for (let i = 0; i < state.totalQ; i++) state.questions.push(lvCfg.gen());
+  document.getElementById('runnerIcon').textContent = subject === 'word' ? '🦁' : '🏎️';
+  showPanel('panelPlay');
+  renderQuestion();
+}
+
+function replaySame() {
+  startGame(state.curSubject, state.curLevel);
+}
+
+function speakCurrent() {
+  if (state.currentSpeakText) speakEnglish(state.currentSpeakText);
+}
+
+function renderQuestion() {
+  state.locked = false;
+  const q = state.questions[state.qIndex];
+
+  document.getElementById('qIndexText').textContent = `第 ${state.qIndex + 1} / ${state.totalQ} 题`;
+  const pct = (state.qIndex / state.totalQ) * 100;
+  document.getElementById('progressFill').style.width = `${pct}%`;
+  document.getElementById('runnerIcon').style.left = `${pct}%`;
+
+  const tagEl = document.getElementById('quizTag');
+  tagEl.textContent = q.tag;
+  tagEl.className = 'quiz-tag ' + (q.tagClass || '');
+
+  const mainEl = document.getElementById('quizMain');
+  mainEl.innerHTML = q.main;
+  // 对话题/应用题文字较长, 缩小字号
+  mainEl.style.fontSize = (q.type === 'dialogue') ? '19px' : (q.tag.indexOf('应用') >= 0 ? '19px' : (q.type === 'fill' ? '32px' : '30px'));
+
+  document.getElementById('quizSub').innerHTML = q.sub;
+  document.getElementById('quizExtra').innerHTML = q.extra;
+
+  // 英语题朗读: 展示题目时先轻声读一遍单词, 并显示"再听一遍"
+  state.currentSpeakText = q.speakText;
+  const speakBtn = document.getElementById('speakAgainBtn');
+  if (q.speakText) {
+    speakBtn.classList.add('show');
+    speakEnglish(q.speakText, 0.95); // 出题时快速预读一遍
+  } else {
+    speakBtn.classList.remove('show');
+  }
+
+  const optionsBox = document.getElementById('optionsBox');
+  optionsBox.innerHTML = '';
+  q.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.textContent = opt;
+    btn.onclick = () => handleAnswer(btn, opt, q.correct);
+    optionsBox.appendChild(btn);
+  });
+}
+
+function handleAnswer(btn, chosen, correct) {
+  if (state.locked) return;
+  state.locked = true;
+
+  const isCorrect = (chosen === correct);
+  if (isCorrect) {
+    btn.classList.add('correct');
+    sfx.correct();
+    state.correctCount++;
+    state.coins += 5;
+    saveCoins();
+    updateStreak(true);
+  } else {
+    btn.classList.add('wrong');
+    sfx.wrong();
+    updateStreak(false);
+    document.querySelectorAll('.opt-btn').forEach(b => {
+      if (b.textContent === correct) b.classList.add('correct');
+    });
+  }
+
+  // 提交后朗读: 单词读两遍, 对话读完整句 (慢速跟读)
+  const q = state.questions[state.qIndex];
+  if (q.speakText) {
+    setTimeout(() => {
+      speakEnglish(q.speakText, 0.8);
+      if (q.type !== 'dialogue') {
+        // 单词题第二遍朗读
+        setTimeout(() => speakEnglish(q.speakText, 0.8), 1800);
+      }
+    }, 350);
+  }
+
+  setTimeout(() => {
+    state.qIndex++;
+    if (state.qIndex < state.totalQ) renderQuestion();
+    else finishGame();
+  }, 2600); // 留足朗读跟读时间
+}
+
+function finishGame() {
+  document.getElementById('progressFill').style.width = `100%`;
+  document.getElementById('runnerIcon').style.left = `100%`;
+
+  let bonus = state.correctCount * 5;
+  if (state.correctCount === state.totalQ) { bonus += 25; sfx.win(); }
+  state.coins += bonus;
+  saveCoins();
+
+  const badgeEl = document.getElementById('resBadge');
+  const titleEl = document.getElementById('resTitle');
+  const descEl = document.getElementById('resDesc');
+
+  if (state.correctCount === 10) {
+    badgeEl.textContent = '👑';
+    titleEl.textContent = '超级大满贯！专注力之王！';
+    descEl.textContent = '太震撼了！10道题全部命中！这个难度已经完全征服啦，去挑战更高难度吧！';
+  } else if (state.correctCount >= 8) {
+    badgeEl.textContent = '🌟';
+    titleEl.textContent = '高能学霸勇士！';
+    descEl.textContent = '非常出色！离大满贯只差一点点，把错题听熟读顺，下次一定全对！';
+  } else {
+    badgeEl.textContent = '🛡️';
+    titleEl.textContent = '完成特训！能量充满！';
+    descEl.textContent = '每闯一关大脑都在升级！先听发音再做题，坚持几天效果惊人！';
+  }
+
+  document.getElementById('resCorrect').textContent = `${state.correctCount} / ${state.totalQ}`;
+  document.getElementById('resAccuracy').textContent = `${Math.round((state.correctCount / state.totalQ) * 100)}%`;
+  document.getElementById('resEarnCoins').textContent = `+${bonus}`;
+
+  showPanel('panelResult');
+}
+</script>
+
+</body>
+</html>

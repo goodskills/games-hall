@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>小张游戏厅</title>
+<link rel="icon" href="data:,">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { min-height:100vh; display:flex; align-items:center; justify-content:center;
+    font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:radial-gradient(1200px 600px at 50% -10%, #1e3a6e 0%, #0b1220 55%, #070b16 100%);
+    color:#e8eefc; padding:24px; }
+  .wrap { width:min(92vw,420px); text-align:center; }
+  h1 { font-size:34px; letter-spacing:4px; margin-bottom:4px;
+    background:linear-gradient(180deg,#fff,#ffd76e); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub { color:#8fa3c8; font-size:13px; letter-spacing:5px; margin-bottom:26px; }
+  a.card { display:flex; align-items:center; gap:16px; text-decoration:none; color:inherit;
+    background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.03));
+    border:1px solid rgba(255,255,255,.12); border-radius:18px; padding:18px; margin-bottom:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.35); transition:transform .12s ease; }
+  a.card:active { transform:scale(.97); }
+  .card .emoji { font-size:44px; filter:drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
+  .card .info { flex:1; text-align:left; }
+  .card .name { font-size:20px; font-weight:800; }
+  .card .desc { font-size:13px; color:#9db1d6; margin-top:3px; line-height:1.5; }
+  .card .go { font-size:22px; color:#ffd76e; }
+  .card.mountain { background:linear-gradient(160deg,rgba(96,165,250,.16),rgba(59,130,246,.05)); border-color:rgba(96,165,250,.3); }
+  .card.memory { background:linear-gradient(160deg,rgba(255,215,110,.14),rgba(245,166,35,.05)); border-color:rgba(255,215,110,.3); }
+  .card.study { background:linear-gradient(160deg,rgba(74,222,128,.16),rgba(56,189,248,.06)); border-color:rgba(74,222,128,.35); }
+  .card.rpg { background:linear-gradient(160deg,rgba(168,85,247,.16),rgba(126,34,206,.06)); border-color:rgba(168,85,247,.35); }
+  .card.legend { background:linear-gradient(160deg,rgba(255,140,40,.18),rgba(200,80,20,.06)); border-color:rgba(255,140,40,.4); }
+  .foot { color:#5d6f92; font-size:12px; margin-top:18px; line-height:1.8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎮 小张游戏厅</h1>
+  <div class="sub">XIAOZHANG ARCADE</div>
+
+  <a class="card legend" href="legend/index.html">
+    <div class="emoji">⚔️</div>
+    <div class="info">
+      <div class="name">热血传奇 · 放置打宝</div>
+      <div class="desc">原版1.76复刻 · 账号登录各玩各的<br>封魔谷魔龙城屠龙圣殿 · 四大魔王等你讨伐！</div>
+    </div>
+    <div class="go">›</div>
+  </a>
+
+  <a class="card study" href="math-word-game/index.html">
+    <div class="emoji">🦁</div>
+    <div class="info">
+      <div class="name">学霸小勇士</div>
+      <div class="desc">三年级专注力特训 · 单词闯关<br>极速口算小赛车 · 5分钟全对挑战！</div>
+    </div>
+    <div class="go">›</div>
+  </a>
+
+  <a class="card rpg" href="xiaozhang-rpg/index.html">
+    <div class="emoji">🐒</div>
+    <div class="info">
+      <div class="name">小张斗妖录</div>
+      <div class="desc">回合制降妖 · 六章西游闯关<br>升级学技能斩妖魔，装备法宝定三界！</div>
+    </div>
+    <div class="go">›</div>
+  </a>
+
+  <a class="card mountain" href="mountain-run/index.html">
+    <div class="emoji">🏔️</div>
+    <div class="info">
+      <div class="name">小张登山</div>
+      <div class="desc">跑酷登山 · 躲陷阱吃金币<br>喝水吃肉补能量，冲顶 8848 米！</div>
+    </div>
+    <div class="go">›</div>
+  </a>
+
+  <a class="card memory" href="memory-game/index.html">
+    <div class="emoji">🧠</div>
+    <div class="info">
+      <div class="name">记忆翻牌</div>
+      <div class="desc">经典配对挑战 · 三档难度<br>比比谁记性好，挑战最快纪录！</div>
+    </div>
+    <div class="go">›</div>
+  </a>
+
+  <div class="foot">数据保存在你自己的手机上<br>把链接分享给朋友，随时开玩 🎉</div>
+</div>
+</body>
+</html>

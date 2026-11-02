@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>记忆翻牌</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    background: linear-gradient(160deg, #4f46e5 0%, #7c3aed 45%, #a855f7 100%);
+    color: #fff;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh;
+    padding: calc(env(safe-area-inset-top) + 14px) 14px calc(env(safe-area-inset-bottom) + 16px);
+    touch-action: manipulation;
+    user-select: none; -webkit-user-select: none;
+    overflow-x: hidden;
+  }
+  header { width: min(94vw, 420px); text-align: center; }
+  h1 { font-size: 26px; letter-spacing: 4px; text-shadow: 0 2px 8px rgba(0,0,0,.25); }
+  .subtitle { font-size: 12px; opacity: .75; margin-top: 4px; letter-spacing: 1px; }
+
+  .levels { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+  .levels button {
+    border: 1px solid rgba(255,255,255,.45); background: rgba(255,255,255,.12);
+    color: #fff; font-size: 13px; padding: 6px 14px; border-radius: 999px;
+    cursor: pointer; transition: all .2s;
+  }
+  .levels button.active { background: #fff; color: #4f46e5; border-color: #fff; font-weight: 600; }
+
+  .stats { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
+  .stat {
+    background: rgba(255,255,255,.16); backdrop-filter: blur(6px);
+    border-radius: 12px; padding: 6px 14px; text-align: center; min-width: 72px;
+  }
+  .stat .num { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .label { font-size: 11px; opacity: .8; }
+
+  #board {
+    display: grid; gap: 10px;
+    width: min(94vw, 420px);
+    margin-top: 14px;
+  }
+  .card { aspect-ratio: 3/4; perspective: 700px; cursor: pointer; }
+  .card-inner {
+    position: relative; width: 100%; height: 100%;
+    transform-style: preserve-3d;
+    transition: transform .45s cubic-bezier(.25,.8,.3,1.2);
+  }
+  .card.flipped .card-inner, .card.matched .card-inner { transform: rotateY(180deg); }
+  .face {
+    position: absolute; inset: 0;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    border-radius: 14px; display: flex; align-items: center; justify-content:center;
+    font-size: clamp(30px, 9.5vw, 46px);
+  }
+  .back {
+    background: linear-gradient(135deg, #818cf8, #c084fc);
+    box-shadow: 0 4px 10px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.35);
+    font-size: clamp(22px, 7vw, 32px); color: rgba(255,255,255,.85);
+  }
+  .front {
+    background: #fff;
+    transform: rotateY(180deg);
+    box-shadow: 0 4px 10px rgba(0,0,0,.18);
+  }
+  .card.matched .front {
+    box-shadow: 0 0 0 3px #34d399, 0 4px 10px rgba(0,0,0,.18);
+  }
+  .card.matched { animation: pop .4s ease; pointer-events: none; }
+  @keyframes pop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+  .card.shake .card-inner { animation: shake .35s ease; }
+  @keyframes shake {
+    0%,100% { transform: rotateY(180deg) translateX(0); }
+    25% { transform: rotateY(180deg) translateX(-5px); }
+    75% { transform: rotateY(180deg) translateX(5px); }
+  }
+
+  .footer { margin-top: 14px; display: flex; align-items: center; gap: 14px; font-size: 12px; opacity: .85; }
+  .footer button {
+    background: rgba(255,255,255,.16); border: none; color: #fff;
+    font-size: 16px; border-radius: 10px; padding: 4px 10px; cursor: pointer;
+  }
+  .best { font-variant-numeric: tabular-nums; }
+
+  #overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: rgba(30, 20, 70, .72); backdrop-filter: blur(8px);
+    display: none; align-items: center; justify-content: center;
+  }
+  #overlay.show { display: flex; }
+  .panel {
+    background: linear-gradient(160deg, #ffffff, #f1f0ff);
+    color: #4338ca; border-radius: 20px; padding: 28px 30px;
+    text-align: center; width: min(86vw, 340px);
+    box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    animation: rise .35s ease;
+  }
+  @keyframes rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .panel .trophy { font-size: 52px; }
+  .panel h2 { font-size: 22px; margin: 8px 0 4px; }
+  .panel .result { font-size: 15px; color: #6d28d9; margin-bottom: 6px; }
+  .panel .record { font-size: 13px; color: #059669; min-height: 18px; font-weight: 600; }
+  .panel button {
+    margin-top: 16px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    color: #fff; font-size: 16px; font-weight: 600;
+    padding: 12px 36px; border-radius: 999px;
+    box-shadow: 0 6px 16px rgba(99,102,241,.45);
+  }
+  .panel button:active { transform: scale(.96); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🃏 记忆翻牌</h1>
+  <div class="subtitle">翻开两张相同的牌即配对成功</div>
+  <div class="levels">
+    <button data-level="easy">简单 4×3</button>
+    <button data-level="normal" class="active">标准 4×4</button>
+    <button data-level="hard">挑战 4×5</button>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="num" id="moves">0</div><div class="label">步数</div></div>
+    <div class="stat"><div class="num" id="time">0:00</div><div class="label">用时</div></div>
+    <div class="stat"><div class="num" id="pairs">0/8</div><div class="label">配对</div></div>
+  </div>
+</header>
+
+<div id="board"></div>
+
+<div class="footer">
+  <button id="mute" title="音效开关">🔊</button>
+  <span class="best" id="best">最佳：--</span>
+</div>
+
+<div id="overlay">
+  <div class="panel">
+    <div class="trophy">🏆</div>
+    <h2>全部配对成功！</h2>
+    <div class="result" id="result"></div>
+    <div class="record" id="record"></div>
+    <button id="again">再来一局</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var EMOJIS = ['🐶','🐱','🦊','🐼','🐨','🦁','🐸','🐵','🦄','🐔','🦉','🦋'];
+  var LEVELS = {
+    easy:   { rows: 3, cols: 4, pairs: 6  },
+    normal: { rows: 4, cols: 4, pairs: 8  },
+    hard:   { rows: 5, cols: 4, pairs: 10 }
+  };
+
+  var board = document.getElementById('board');
+  var movesEl = document.getElementById('moves');
+  var timeEl = document.getElementById('time');
+  var pairsEl = document.getElementById('pairs');
+  var bestEl = document.getElementById('best');
+  var overlay = document.getElementById('overlay');
+  var resultEl = document.getElementById('result');
+  var recordEl = document.getElementById('record');
+
+  var level = 'normal';
+  var first = null;      // 第一次翻开的牌
+  var lock = false;      // 配对判定期间锁输入
+  var moves = 0;
+  var matched = 0;
+  var timerInt = null;
+  var startAt = 0;
+  var muted = localStorage.getItem('memoryflip.muted') === '1';
+
+  /* ---------- 音效（WebAudio 合成，无外部资源） ---------- */
+  var actx = null;
+  function ensureAudio() {
+    if (!actx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) actx = new AC();
+    }
+    if (actx && actx.state === 'suspended') actx.resume();
+  }
+  function tone(freq, dur, delay, type, vol) {
+    if (!actx || muted) return;
+    var t = actx.currentTime + (delay || 0);
+    var osc = actx.createOscillator();
+    var gain = actx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol || 0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(gain); gain.connect(actx.destination);
+    osc.start(t); osc.stop(t + dur + 0.05);
+  }
+  var sFlip  = function () { tone(520, 0.08, 0, 'triangle', 0.07); };
+  var sMatch = function () { tone(660, 0.12, 0); tone(880, 0.16, 0.1); };
+  var sMiss  = function () { tone(220, 0.15, 0, 'sawtooth', 0.05); };
+  var sWin   = function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.18, i * 0.12); }); };
+
+  /* ---------- 工具 ---------- */
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+  function fmt(sec) {
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return m + ':' + (s < 10 ? '0' + s : s);
+  }
+  function bestKey() { return 'memoryflip.best.' + level; }
+  function loadBest() {
+    try { return JSON.parse(localStorage.getItem(bestKey())); } catch (e) { return null; }
+  }
+  function showBest() {
+    var b = loadBest();
+    bestEl.textContent = b ? ('最佳：' + b.moves + ' 步 / ' + fmt(b.time)) : '最佳：--';
+  }
+
+  /* ---------- 计时 ---------- */
+  function startTimer() {
+    if (timerInt) return;
+    startAt = Date.now();
+    timerInt = setInterval(function () {
+      timeEl.textContent = fmt(Math.floor((Date.now() - startAt) / 1000));
+    }, 500);
+  }
+  function stopTimer() {
+    clearInterval(timerInt); timerInt = null;
+  }
+
+  /* ---------- 建局 ---------- */
+  function build() {
+    var cfg = LEVELS[level];
+    first = null; lock = false; moves = 0; matched = 0;
+    stopTimer();
+    movesEl.textContent = '0';
+    timeEl.textContent = '0:00';
+    pairsEl.textContent = '0/' + cfg.pairs;
+    overlay.classList.remove('show');
+    showBest();
+
+    var pool = shuffle(EMOJIS.slice()).slice(0, cfg.pairs);
+    var deck = shuffle(pool.concat(pool));
+
+    board.style.gridTemplateColumns = 'repeat(' + cfg.cols + ', 1fr)';
+    board.innerHTML = '';
+    deck.forEach(function (emoji) {
+      var card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML =
+        '<div class="card-inner">' +
+          '<div class="face back">❓</div>' +
+          '<div class="face front">' + emoji + '</div>' +
+        '</div>';
+      card.dataset.emoji = emoji;
+      card.addEventListener('click', function () { onFlip(card); });
+      board.appendChild(card);
+    });
+  }
+
+  /* ---------- 核心逻辑 ---------- */
+  function onFlip(card) {
+    ensureAudio();
+    if (lock || card === first) return;
+    if (card.classList.contains('matched') || card.classList.contains('flipped')) return;
+
+    startTimer();
+    card.classList.add('flipped');
+    sFlip();
+
+    if (!first) { first = card; return; }
+
+    moves++;
+    movesEl.textContent = moves;
+
+    var a = first, b = card;
+    first = null;
+
+    if (a.dataset.emoji === b.dataset.emoji) {
+      // 配对成功
+      setTimeout(function () {
+        a.classList.add('matched'); b.classList.add('matched');
+        a.classList.remove('flipped'); b.classList.remove('flipped');
+        matched++;
+        pairsEl.textContent = matched + '/' + LEVELS[level].pairs;
+        sMatch();
+        if (matched === LEVELS[level].pairs) win();
+      }, 260);
+    } else {
+      // 配对失败：短暂展示后翻回
+      lock = true;
+      a.classList.add('shake'); b.classList.add('shake');
+      sMiss();
+      setTimeout(function () {
+        a.classList.remove('flipped', 'shake');
+        b.classList.remove('flipped', 'shake');
+        lock = false;
+      }, 750);
+    }
+  }
+
+  function win() {
+    stopTimer();
+    var sec = Math.floor((Date.now() - startAt) / 1000);
+    sWin();
+
+    var isRecord = false;
+    var best = loadBest();
+    if (!best || moves < best.moves || (moves === best.moves && sec < best.time)) {
+      localStorage.setItem(bestKey(), JSON.stringify({ moves: moves, time: sec }));
+      isRecord = true;
+    }
+    showBest();
+
+    resultEl.textContent = '用了 ' + moves + ' 步 / ' + fmt(sec);
+    recordEl.textContent = isRecord ? '🎉 新纪录！' : '';
+    setTimeout(function () { overlay.classList.add('show'); }, 450);
+  }
+
+  /* ---------- 交互绑定 ---------- */
+  document.querySelectorAll('.levels button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelector('.levels .active').classList.remove('active');
+      btn.classList.add('active');
+      level = btn.dataset.level;
+      build();
+    });
+  });
+  document.getElementById('again').addEventListener('click', build);
+
+  var muteBtn = document.getElementById('mute');
+  function renderMute() { muteBtn.textContent = muted ? '🔇' : '🔊'; }
+  muteBtn.addEventListener('click', function () {
+    muted = !muted;
+    localStorage.setItem('memoryflip.muted', muted ? '1' : '0');
+    renderMute();
+    if (!muted) { ensureAudio(); sFlip(); }
+  });
+  renderMute();
+
+  build();
+})();
+</script>
+</body>
+</html>
