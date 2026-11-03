@@ -2,14 +2,7 @@
   "name": "games-hall",
   "compatibility_date": "2025-01-01",
   "assets": {
-    "directory": "./",
-    "exclude": [
-      ".git",
-      ".git/**",
-      ".gitignore",
-      "README.md",
-      "LICENSE"
-    ],
+    "directory": "./public",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page"
   }
