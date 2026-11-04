@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>王牌调度官：陆空特遣队</title>
+<link rel="icon" href="data:,">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#0b111e; color:#e2e8f0;
+    font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; touch-action:manipulation; user-select:none; }
+  #app { width:100%; height:100%; max-width:480px; margin:0 auto; display:flex; flex-direction:column; position:relative; }
+
+  /* 顶部状态栏 */
+  .hud { padding:10px 14px; background:linear-gradient(180deg,#151f32 0%,#0f172a 100%); border-bottom:1px solid #1e293b;
+    display:flex; justify-content:space-between; align-items:center; z-index:10; font-size:13px; }
+  .rank-badge { display:flex; align-items:center; gap:6px; font-weight:800; color:#38bdf8; }
+  .hud-stats { display:flex; gap:12px; font-weight:700; }
+  .hud-stats span { display:flex; align-items:center; gap:4px; }
+  .coin { color:#facc15; }
+  .star { color:#f43f5e; }
+
+  /* 页面容器 */
+  .view { flex:1; display:none; flex-direction:column; overflow-y:auto; padding:12px; position:relative; }
+  .view.active { display:flex; }
+
+  /* 卡片与战区 */
+  .card { background:rgba(30,41,59,.75); border:1px solid rgba(56,189,248,.25); border-radius:14px; padding:14px; margin-bottom:12px;
+    box-shadow:0 8px 24px rgba(0,0,0,.35); backdrop-filter:blur(8px); }
+  .card-title { font-size:15px; font-weight:800; color:#38bdf8; margin-bottom:8px; display:flex; justify-content:space-between; }
+
+  /* 基地指挥台（主页） */
+  .garage-view { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:16px 0; }
+  .vehicle-stage { width:220px; height:150px; position:relative; display:flex; align-items:center; justify-content:center; }
+  .vehicle-img { font-size:88px; filter:drop-shadow(0 10px 20px rgba(0,0,0,.6)); animation:float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  .vehicle-platform { position:absolute; bottom:10px; width:170px; height:24px; background:radial-gradient(ellipse at center, rgba(56,189,248,.4) 0%, transparent 75%); border-radius:50%; }
+  .vehicle-name { font-size:22px; font-weight:900; color:#f8fafc; letter-spacing:1px; margin-top:4px; }
+  .vehicle-desc { font-size:12px; color:#94a3b8; margin-top:2px; }
+
+  /* 导航按钮组 */
+  .menu-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+  .btn { border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:800; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px; transition:transform .1s, filter .1s; }
+  .btn:active { transform:scale(.97); filter:brightness(1.15); }
+  .btn-primary { background:linear-gradient(135deg,#0284c7,#0369a1); color:#fff; box-shadow:0 4px 14px rgba(2,132,199,.4); }
+  .btn-gold { background:linear-gradient(135deg,#eab308,#ca8a04); color:#422006; box-shadow:0 4px 14px rgba(234,179,8,.35); }
+  .btn-dark { background:#1e293b; color:#cbd5e1; border:1px solid #334155; }
+  .btn-red { background:linear-gradient(135deg,#e11d48,#be123c); color:#fff; }
+
+  /* 答题战场 */
+  .mission-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .mission-type { font-size:12px; padding:3px 8px; border-radius:6px; background:#0369a1; color:#e0f2fe; font-weight:700; }
+  .quest-box { background:#0f172a; border:1.5px solid #38bdf8; border-radius:14px; padding:16px; margin-bottom:12px; line-height:1.7; font-size:16px; color:#f8fafc; }
+  .quest-box b { color:#facc15; font-size:18px; margin:0 2px; }
+
+  /* 乘除决策钥匙（核心思维选择） */
+  .logic-panel { margin-bottom:12px; }
+  .logic-tip { font-size:12px; color:#94a3b8; margin-bottom:6px; font-weight:700; display:flex; align-items:center; gap:4px; }
+  .logic-choices { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .logic-btn { background:#1e293b; border:2px solid #334155; border-radius:12px; padding:12px; text-align:center; cursor:pointer; }
+  .logic-btn.selected { border-color:#38bdf8; background:rgba(56,189,248,.15); }
+  .logic-btn .op-symbol { font-size:24px; font-weight:900; display:block; margin-bottom:2px; }
+  .logic-btn .op-desc { font-size:12px; color:#94a3b8; font-weight:600; }
+  .logic-btn.mul .op-symbol { color:#fbbf24; }
+  .logic-btn.div .op-symbol { color:#38bdf8; }
+
+  /* 算式槽位 */
+  .formula-stage { background:rgba(15,23,42,.8); border-radius:12px; padding:12px; margin-bottom:12px; display:flex; align-items:center; justify-content:center; gap:8px; border:1px dashed #475569; }
+  .slot { width:52px; height:44px; background:#1e293b; border:2px solid #64748b; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:900; color:#38bdf8; }
+  .slot.filled { border-color:#38bdf8; background:#0f172a; }
+  .slot-op { width:38px; font-size:22px; color:#facc15; }
+
+  /* 候选数码键盘 */
+  .pad-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
+  .chip { background:#1e293b; border:1px solid #475569; border-radius:10px; padding:10px 0; text-align:center; font-size:17px; font-weight:800; cursor:pointer; color:#f1f5f9; }
+  .chip:active { background:#334155; transform:scale(.95); }
+  .chip.used { opacity:.3; pointer-events:none; }
+
+  /* 动画发射反馈 */
+  .launch-canvas { position:fixed; inset:0; pointer-events:none; z-index:90; display:none; }
+
+  /* 错题弹窗与奖励 */
+  .modal-overlay { position:fixed; inset:0; background:rgba(3,7,18,.8); z-index:100; display:none; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(6px); }
+  .modal-overlay.show { display:flex; }
+  .modal-panel { width:100%; max-width:380px; background:#0f172a; border:2px solid #38bdf8; border-radius:18px; padding:20px; text-align:center; box-shadow:0 12px 40px rgba(0,0,0,.6); }
+  .modal-title { font-size:22px; font-weight:900; margin-bottom:8px; }
+  .modal-title.succ { color:#4ade80; }
+  .modal-title.fail { color:#f87171; }
+  .modal-body { font-size:14px; line-height:1.7; color:#cbd5e1; margin-bottom:16px; text-align:left; background:#1e293b; padding:12px; border-radius:10px; }
+
+  /* 载具机库（改装） */
+  .hangar-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .hangar-card { background:#1e293b; border:2px solid #334155; border-radius:12px; padding:12px; text-align:center; cursor:pointer; }
+  .hangar-card.active { border-color:#38bdf8; background:rgba(56,189,248,.12); }
+  .hangar-card .h-emoji { font-size:48px; margin:6px 0; }
+  .hangar-card .h-title { font-size:14px; font-weight:800; color:#f1f5f9; }
+  .hangar-card .h-status { font-size:11px; margin-top:4px; font-weight:700; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- 顶部状态栏 -->
+  <div class="hud">
+    <div class="rank-badge" id="rankBadge">🎖️ 新训调度官</div>
+    <div class="hud-stats">
+      <span class="coin">💰 <b id="statCoins">0</b></span>
+      <span class="star">⭐ 连胜 <b id="statStreak">0</b></span>
+    </div>
+  </div>
+
+  <!-- 基地主页面 -->
+  <div id="viewHome" class="view active">
+    <div class="card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-size:13px; color:#94a3b8;">基地番号：<b style="color:#f8fafc;">南粤特遣战区 (广州三年级)</b></div>
+      <div style="font-size:12px; color:#38bdf8;" id="todayStat">今日调度：0 轮</div>
+    </div>
+
+    <div class="garage-view">
+      <div class="vehicle-stage">
+        <div class="vehicle-platform"></div>
+        <div class="vehicle-img" id="mainVehicleEmoji">🏎️</div>
+      </div>
+      <div class="vehicle-name" id="mainVehicleName">突击超跑战车</div>
+      <div class="vehicle-desc" id="mainVehicleDesc">全天候快速反应部队专用</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>🚀 特遣战区任务</span><span id="rankLevelText">Lv.1</span></div>
+      <div style="font-size:13px; color:#cbd5e1; margin-bottom:10px;">
+        敌情通报：前线急需精确的载具、燃料与兵力调度！分清乘除法，出动战车战机！
+      </div>
+      <button class="btn btn-primary" style="width:100%; font-size:18px;" id="btnStartMission">⚔️ 开始特遣调度任务</button>
+    </div>
+
+    <div class="menu-grid">
+      <button class="btn btn-gold" id="btnHangar">🛸 战车与机库</button>
+      <button class="btn btn-dark" id="btnReview">📖 调度指挥秘籍</button>
+    </div>
+  </div>
+
+  <!-- 任务作战室 -->
+  <div id="viewMission" class="view">
+    <div class="mission-header">
+      <button class="btn btn-dark" style="padding:6px 12px; font-size:12px;" id="btnQuitMission">← 撤退</button>
+      <div class="mission-type" id="missionTypeTag">编组乘法任务</div>
+      <div style="font-size:12px; color:#94a3b8;" id="missionCount">第 1 / 10 题</div>
+    </div>
+
+    <!-- 题目文字 -->
+    <div class="quest-box" id="questText">
+      加载作战指令中...
+    </div>
+
+    <!-- 第一步：思维逻辑选择器（找总数） -->
+    <div class="logic-panel">
+      <div class="logic-tip">🧭 指挥官战略研判：这道题到底该用什么运算？</div>
+      <div class="logic-choices">
+        <div class="logic-btn mul" id="choiceMul">
+          <span class="op-symbol">× 乘法</span>
+          <span class="op-desc">求总数 / 算几倍是多少<br>(几个几合起来)</span>
+        </div>
+        <div class="logic-btn div" id="choiceDiv">
+          <span class="op-symbol">÷ 除法</span>
+          <span class="op-desc">总数已给出 / 求平均<br>(分箱分份 / 逆向找一倍)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第二步：列式槽位 -->
+    <div class="formula-stage">
+      <div class="slot" id="slotA">?</div>
+      <div class="slot-op" id="slotOp">?</div>
+      <div class="slot" id="slotB">?</div>
+      <div style="font-size:20px; font-weight:800; color:#64748b;">=</div>
+      <div class="slot" id="slotAns" style="width:68px; color:#4ade80;">?</div>
+    </div>
+
+    <!-- 候选数码键盘 -->
+    <div style="font-size:12px; color:#94a3b8; margin-bottom:6px;">👇 点击装填算式数字与答案：</div>
+    <div class="pad-grid" id="padGrid"></div>
+
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-dark" style="flex:1;" id="btnClearFormula">重填</button>
+      <button class="btn btn-primary" style="flex:2;" id="btnLaunchFormula">🚀 发射调度指令！</button>
+    </div>
+  </div>
+
+  <!-- 载具机库 -->
+  <div id="viewHangar" class="view">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <button class="btn btn-dark" style="padding:6px 12px; font-size:12px;" id="btnHangarBack">← 返回基地</button>
+      <div style="font-size:14px; font-weight:800; color:#38bdf8;">基地特遣载具库</div>
+    </div>
+    <div class="hangar-grid" id="hangarGrid"></div>
+  </div>
+
+  <!-- 调度秘籍（思维法则） -->
+  <div id="viewReview" class="view">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <button class="btn btn-dark" style="padding:6px 12px; font-size:12px;" id="btnReviewBack">← 返回基地</button>
+      <div style="font-size:14px; font-weight:800; color:#38bdf8;">王牌调度官核心算理秘籍</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔑 第一绝招：看“总数”在不在？</div>
+      <p style="font-size:13px; line-height:1.7; color:#cbd5e1;">
+        🔴 <b>不知道总数，要求总共是多少？</b><br>
+        $\rightarrow$ 每组几个 × 有几组 = 总共多少！<b>用乘法！</b><br>
+        例如：一辆战车装6个轮子，8辆装几百个？(6×8=48)<br><br>
+        🟢 <b>总数已经告诉你了，让你去分？</b><br>
+        $\rightarrow$ 总数 ÷ 每份多少 = 能分几车！<br>
+        $\rightarrow$ 总数 ÷ 分成几车 = 每车分几个！<b>用除法！</b>
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚠️ 第二绝招：警惕“倍”字真假陷阱（广州校考大杀手）</div>
+      <p style="font-size:13px; line-height:1.7; color:#cbd5e1;">
+        ⭐ <b>小求大（顺着乘）：</b><br>
+        直升机有6架，战斗机是它的3倍。求战斗机？<br>
+        战斗机比直升机多，顺流而下：<b>6 × 3 = 18架</b>。<br><br>
+        🚨 <b>大求小（逆向除 - 重点！）：</b><br>
+        战斗机有18架，<b>正好是直升机的3倍</b>。求直升机？<br>
+        战斗机已经是大数了，直升机少，必须除回去：<b>18 ÷ 3 = 6架</b>！绝不能看到倍字就直接乘！
+      </p>
+    </div>
+  </div>
+
+  <!-- 反馈弹窗 -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-panel">
+      <div class="modal-title succ" id="modalTitle">🎉 调度成功！</div>
+      <div class="modal-body" id="modalBody">详细解析信息</div>
+      <button class="btn btn-primary" style="width:100%;" id="btnModalNext">前往下一调度战区 →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+
+/* ================= 载具与军衔体系 ================= */
+const VEHICLES = [
+  { id:'v1', name:'突击超跑战车', emoji:'🏎️', desc:'高机动近地调度指挥车', cost:0, unlocked:true },
+  { id:'v2', name:'狂暴装甲越野车', emoji:'🚙', desc:'重装防护，耐恶劣战地', cost:150, unlocked:false },
+  { id:'v3', name:'武直-20“黑鹰”', emoji:'🚁', desc:'垂直起降，全地形突防', cost:350, unlocked:false },
+  { id:'v4', name:'歼-20“威龙”隐身战机', emoji:'✈️', desc:'超音速巡航，空天霸王', cost:700, unlocked:false },
+  { id:'v5', name:'空天重型战略运输机', emoji:'🚀', desc:'极限载重，空天一体战略投送', cost:1200, unlocked:false },
+];
+
+const RANKS = [
+  [0, '新训调度官', '🎖️'],
+  [50, '装甲特遣中尉', '⭐'],
+  [150, '飞行调度上尉', '🌟'],
+  [300, '空天突击少校', '🏆'],
+  [600, '陆空王牌上校', '🦅'],
+  [1200, '极速超能司令', '👑'],
+];
+
+/* ================= 题型生成引擎（广州三年级典型题库） ================= */
+// 8种模型题型模版生成函数
+function genQuestions() {
+  const list = [];
+  const ri = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
+
+  // 1. 每份数 × 份数 = 总数（战车部件）
+  for(let i=0; i<4; i++){
+    const cars = ri(4, 9);
+    const wheels = ri(4, 8);
+    const total = cars * wheels;
+    list.push({
+      type: 'mul',
+      tag: '车队装配（求总数）',
+      text: `特遣基地正在装配 <b>${cars}</b> 辆特战装甲越野车，每辆越野车需要配备 <b>${wheels}</b> 个防爆高压轮胎。装备车间一共需要准备多少个轮胎？`,
+      ansA: cars, ansOp: '×', ansB: wheels, ansVal: total,
+      nums: [cars, wheels, total, cars+wheels, total-4],
+      explain: `题目问的是“一共需要多少个”，属于<b>不知道总数求总数</b>。一辆车要 ${wheels} 个，有 ${cars} 辆，也就是求 ${cars} 个 ${wheels} 是多少，用乘法：${wheels} × ${cars} = ${total}（或 ${cars} × ${wheels} = ${total}）个。`
+    });
+  }
+
+  // 2. 战机编队总数（求总数）
+  for(let i=0; i<3; i++){
+    const groups = ri(3, 7);
+    const planes = ri(4, 6);
+    const total = groups * planes;
+    list.push({
+      type: 'mul',
+      tag: '战机列队（求总数）',
+      text: `白云机场上空组织阅兵飞行表演，空中一共有 <b>${groups}</b> 个飞行中队，每个中队整齐编组了 <b>${planes}</b> 架歼-20战机。参加阅兵的歼-20一共有多少架？`,
+      ansA: groups, ansOp: '×', ansB: planes, ansVal: total,
+      nums: [groups, planes, total, total+3, groups*2],
+      explain: `求阅兵飞机一共有多少架，已知有 ${groups} 个中队，每队 ${planes} 架，属于<b>求几个几是多少</b>，用乘法：${groups} × ${planes} = ${total} 架。`
+    });
+  }
+
+  // 3. 等分除：总数 ÷ 份数 = 每份数
+  for(let i=0; i<4; i++){
+    const squads = ri(4, 8);
+    const perSquad = ri(5, 9);
+    const total = squads * perSquad;
+    list.push({
+      type: 'div',
+      tag: '人员等分（已知总数）',
+      text: `空降特遣队紧急集结了 <b>${total}</b> 名伞兵突击队员，基地指挥官下令将他们平均分成 <b>${squads}</b> 个特战机组。请问每个机组分到多少名队员？`,
+      ansA: total, ansOp: '÷', ansB: squads, ansVal: perSquad,
+      nums: [total, squads, perSquad, total+squads, perSquad*2],
+      explain: `题目<b>总人数 ${total} 人已经知道</b>了，要把总数“平均分成” ${squads} 份，求每一份是多少，必须用除法：${total} ÷ ${squads} = ${perSquad} 名。`
+    });
+  }
+
+  // 4. 包含除：总数 ÷ 每份数 = 份数
+  for(let i=0; i<4; i++){
+    const perPlane = ri(6, 9);
+    const planes = ri(4, 8);
+    const total = perPlane * planes;
+    list.push({
+      type: 'div',
+      tag: '容量分装（已知总数）',
+      text: `前线运来 <b>${total}</b> 桶航空燃油，每架运输直升机的副油箱一次只能装载 <b>${perPlane}</b> 桶。这些燃油需要装载几架直升机？`,
+      ansA: total, ansOp: '÷', ansB: perPlane, ansVal: planes,
+      nums: [total, perPlane, planes, total-perPlane, planes*3],
+      explain: `已知燃油总数是 <b>${total}</b> 桶，每架直升机要分走 ${perPlane} 桶，求能装几架，就是看 ${total} 里面有几个 ${perPlane}，用除法：${total} ÷ ${perPlane} = ${planes} 架。`
+    });
+  }
+
+  // 5. 正向倍数（小求大：用乘法）
+  for(let i=0; i<4; i++){
+    const small = ri(4, 8);
+    const times = ri(3, 5);
+    const big = small * times;
+    list.push({
+      type: 'mul',
+      tag: '正向求倍数（乘法）',
+      text: `航母甲板上停靠了 <b>${small}</b> 架大型预警机，隐身战斗机的数量是预警机的 <b>${times}</b> 倍。甲板上一共有多少架隐身战斗机？`,
+      ansA: small, ansOp: '×', ansB: times, ansVal: big,
+      nums: [small, times, big, big+small, small*2],
+      explain: `预警机少（${small} 架），战斗机多（是预警机的 ${times} 倍）。求战斗机是多少，是小求大，用乘法：${small} × ${times} = ${big} 架！`
+    });
+  }
+
+  // 6. 逆向倍数（大求小：必考失分陷阱！用除法）
+  for(let i=0; i<5; i++){
+    const small = ri(4, 9);
+    const times = ri(3, 6);
+    const big = small * times;
+    list.push({
+      type: 'div',
+      tag: '逆向倍数陷阱（除法！）',
+      text: `陆空特遣基地停机坪上有 <b>${big}</b> 架武直-20武装直升机，<b>正好是重型无人机数量的 ${times} 倍</b>。请问基地里有多少架重型无人机？`,
+      ansA: big, ansOp: '÷', ansB: times, ansVal: small,
+      nums: [big, times, small, big*times, big-times],
+      explain: `🚨 <b>高频易错警报！</b>千万不能看到“${times}倍”就直接乘！武直直升机有 ${big} 架，它已经是无人机的 ${times} 倍了，说明无人机比直升机<b>更少</b>！求较小的无人机数量，要用除法：${big} ÷ ${times} = ${small} 架！`
+    });
+  }
+
+  // 7. 速度行程模型（时速 × 时间 = 总路程）
+  for(let i=0; i<3; i++){
+    const speed = ri(60, 90);
+    const hours = ri(2, 4);
+    const dist = speed * hours;
+    list.push({
+      type: 'mul',
+      tag: '行程速度（求总路程）',
+      text: `特警装甲补给车以每小时 <b>${speed}</b> 千米的速度向前线要塞急驰，连续行驶了 <b>${hours}</b> 小时。装甲车一共行驶了多少千米？`,
+      ansA: speed, ansOp: '×', ansB: hours, ansVal: dist,
+      nums: [speed, hours, dist, speed+hours, dist-20],
+      explain: `每小时行驶 ${speed} 千米（速度），行驶了 ${hours} 小时（时间），求一共跑了多远（总路程），用乘法：${speed} × ${hours} = ${dist} 千米。`
+    });
+  }
+
+  // 8. 速度行程模型（总路程 ÷ 时间 = 时速）
+  for(let i=0; i<3; i++){
+    const speed = ri(50, 80);
+    const hours = ri(2, 5);
+    const dist = speed * hours;
+    list.push({
+      type: 'div',
+      tag: '行程时速（已知总路程）',
+      text: `一辆无人侦察巡逻车 <b>${hours}</b> 小时在战地巡逻了 <b>${dist}</b> 千米。这辆侦察巡逻车平均每小时行驶多少千米？`,
+      ansA: dist, ansOp: '÷', ansB: hours, ansVal: speed,
+      nums: [dist, hours, speed, dist/2, speed*2],
+      explain: `已知总路程是 <b>${dist}</b> 千米，用了 ${hours} 小时，求平均每小时跑多少千米（速度），用除法：${dist} ÷ ${hours} = ${speed} 千米/时。`
+    });
+  }
+
+  // 打乱题目顺序
+  return list.sort(() => Math.random() - 0.5);
+}
+
+/* ================= 存档状态与管理 ================= */
+const SAVE_KEY = 'ace_commander_save_v1';
+let S = loadSave();
+
+function defaultSave() {
+  return {
+    coins: 60,
+    streak: 0,
+    totalAnswered: 0,
+    activeVehicle: 'v1',
+    unlockedVehicles: ['v1'],
+    historyDate: new Date().toLocaleDateString()
+  };
+}
+
+function loadSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(raw) return Object.assign(defaultSave(), JSON.parse(raw));
+  } catch(e){}
+  return defaultSave();
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(S));
+  } catch(e){}
+}
+
+/* ================= 音效合成（Web Audio 零依赖） ================= */
+let AC = null;
+function getAC() {
+  if(!AC) {
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+  }
+  if(AC && AC.state === 'suspended') AC.resume();
+  return AC;
+}
+
+function playSound(type) {
+  const ac = getAC();
+  if(!ac) return;
+  const now = ac.currentTime;
+
+  if(type === 'click') {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.setValueAtTime(600, now);
+    o.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+    g.gain.setValueAtTime(0.1, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    o.connect(g); g.connect(ac.destination);
+    o.start(now); o.stop(now + 0.06);
+  }
+  else if(type === 'correct') {
+    // 胜利音阶
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      const t = now + idx * 0.08;
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.18, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      o.connect(g); g.connect(ac.destination);
+      o.start(t); o.stop(t + 0.26);
+    });
+  }
+  else if(type === 'wrong') {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(220, now);
+    o.frequency.exponentialRampToValueAtTime(110, now + 0.35);
+    g.gain.setValueAtTime(0.2, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    o.connect(g); g.connect(ac.destination);
+    o.start(now); o.stop(now + 0.36);
+  }
+  else if(type === 'launch') {
+    // 战机呼啸音效
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(150, now);
+    o.frequency.exponentialRampToValueAtTime(900, now + 0.4);
+    g.gain.setValueAtTime(0.25, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    o.connect(g); g.connect(ac.destination);
+    o.start(now); o.stop(now + 0.46);
+  }
+}
+
+/* ================= 页面导航与渲染 ================= */
+function switchView(viewId) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  $(viewId).classList.add('active');
+  renderHud();
+}
+
+function getRank(coins) {
+  let cur = RANKS[0];
+  for(const r of RANKS) {
+    if(coins >= r[0]) cur = r;
+  }
+  return cur;
+}
+
+function renderHud() {
+  $('statCoins').textContent = S.coins;
+  $('statStreak').textContent = S.streak;
+  const rank = getRank(S.coins);
+  $('rankBadge').textContent = `${rank[2]} ${rank[1]}`;
+  $('todayStat').textContent = `已完成调度：${S.totalAnswered} 次`;
+  
+  // 基地载具展示
+  const v = VEHICLES.find(x => x.id === S.activeVehicle) || VEHICLES[0];
+  $('mainVehicleEmoji').textContent = v.emoji;
+  $('mainVehicleName').textContent = v.name;
+  $('mainVehicleDesc').textContent = v.desc;
+}
+
+/* ================= 答题作战系统 ================= */
+let questions = [];
+let qIndex = 0;
+let currentQ = null;
+let chosenOp = null; // 'mul' | 'div'
+let formula = { a:null, b:null, ans:null };
+let activeSlot = 'a'; // 当前准备装填的槽位
+
+function startMission() {
+  questions = genQuestions().slice(0, 10);
+  qIndex = 0;
+  switchView('viewMission');
+  loadQuestion(qIndex);
+}
+
+function loadQuestion(idx) {
+  currentQ = questions[idx];
+  chosenOp = null;
+  formula = { a:null, b:null, ans:null };
+  activeSlot = 'a';
+
+  $('missionTypeTag').textContent = currentQ.tag;
+  $('missionCount').textContent = `第 ${idx + 1} / ${questions.length} 题`;
+  $('questText').innerHTML = currentQ.text;
+
+  // 重置两步状态
+  $('choiceMul').classList.remove('selected');
+  $('choiceDiv').classList.remove('selected');
+  updateFormulaUI();
+  buildPadGrid();
+}
+
+function updateFormulaUI() {
+  $('slotA').textContent = formula.a !== null ? formula.a : '?';
+  $('slotA').className = 'slot' + (formula.a !== null ? ' filled' : '');
+
+  $('slotOp').textContent = chosenOp === 'mul' ? '×' : (chosenOp === 'div' ? '÷' : '?');
+
+  $('slotB').textContent = formula.b !== null ? formula.b : '?';
+  $('slotB').className = 'slot' + (formula.b !== null ? ' filled' : '');
+
+  $('slotAns').textContent = formula.ans !== null ? formula.ans : '?';
+  $('slotAns').className = 'slot' + (formula.ans !== null ? ' filled' : '');
+}
+
+function buildPadGrid() {
+  const grid = $('padGrid');
+  grid.innerHTML = '';
+  // 取候选数字打乱
+  const candidates = [...new Set(currentQ.nums)].sort(() => Math.random() - 0.5);
+
+  candidates.forEach(num => {
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.textContent = num;
+    chip.onclick = () => fillSlot(num, chip);
+    grid.appendChild(chip);
+  });
+}
+
+function fillSlot(num, chipEl) {
+  playSound('click');
+  if(!chosenOp) {
+    alert('请先在上方战略研判：决定用【× 乘法】还是【÷ 除法】！');
+    return;
+  }
+  if(formula.a === null) {
+    formula.a = num;
+  } else if(formula.b === null) {
+    formula.b = num;
+  } else if(formula.ans === null) {
+    formula.ans = num;
+  } else {
+    // 满了就重选 ans
+    formula.ans = num;
+  }
+  updateFormulaUI();
+}
+
+// 运算决策点击
+$('choiceMul').onclick = () => {
+  playSound('click');
+  chosenOp = 'mul';
+  $('choiceMul').classList.add('selected');
+  $('choiceDiv').classList.remove('selected');
+  updateFormulaUI();
+};
+
+$('choiceDiv').onclick = () => {
+  playSound('click');
+  chosenOp = 'div';
+  $('choiceDiv').classList.add('selected');
+  $('choiceMul').classList.remove('selected');
+  updateFormulaUI();
+};
+
+$('btnClearFormula').onclick = () => {
+  playSound('click');
+  formula = { a:null, b:null, ans:null };
+  updateFormulaUI();
+};
+
+// 提交发射验证
+$('btnLaunchFormula').onclick = () => {
+  if(!chosenOp) {
+    alert('请先研判：选择乘法还是除法！');
+    return;
+  }
+  if(formula.a === null || formula.b === null || formula.ans === null) {
+    alert('请装填完整的算式数字与计算结果！');
+    return;
+  }
+
+  const isOpCorrect = (chosenOp === currentQ.type);
+  let isFormulaValid = false;
+
+  if(chosenOp === 'mul') {
+    // 乘法支持交换律 a*b 或 b*a
+    isFormulaValid = ((formula.a * formula.b === formula.ans) &&
+      ((formula.a === currentQ.ansA && formula.b === currentQ.ansB) ||
+       (formula.a === currentQ.ansB && formula.b === currentQ.ansA)) &&
+      formula.ans === currentQ.ansVal);
+  } else {
+    // 除法被除数必须为最大总数
+    isFormulaValid = (formula.a === currentQ.ansA && formula.b === currentQ.ansB && formula.ans === currentQ.ansVal) ||
+      (formula.a === currentQ.ansA && formula.b === currentQ.ansVal && formula.ans === currentQ.ansB);
+  }
+
+  if(isOpCorrect && isFormulaValid) {
+    // 正确！
+    playSound('launch');
+    setTimeout(() => playSound('correct'), 300);
+
+    S.coins += 20;
+    S.streak += 1;
+    S.totalAnswered += 1;
+    saveState();
+    renderHud();
+
+    $('modalTitle').textContent = '🎉 调度精准！特遣队全速出击！';
+    $('modalTitle').className = 'modal-title succ';
+    $('modalBody').innerHTML = `
+      <div style="font-size:16px; font-weight:800; color:#4ade80; margin-bottom:8px;">
+        正确算式：${currentQ.ansA} ${currentQ.ansOp} ${currentQ.ansB} = ${currentQ.ansVal}
+      </div>
+      <div>${currentQ.explain}</div>
+      <div style="margin-top:10px; color:#facc15; font-weight:700;">获得军饷 +20 💰 当前连胜：${S.streak} ⭐</div>
+    `;
+    $('modalOverlay').classList.add('show');
+  } else {
+    // 错误处理与启发引导
+    playSound('wrong');
+    S.streak = 0;
+    saveState();
+    renderHud();
+
+    $('modalTitle').textContent = '🚨 指挥失误！兵力调度受阻！';
+    $('modalTitle').className = 'modal-title fail';
+
+    let errorDetail = '';
+    if(!isOpCorrect) {
+      errorDetail = `<b>运算方向选反了！</b>这道题${currentQ.type === 'mul' ? '要求总数，应该用【乘法】' : '已知总数在分配/求倍数，应该用【除法】'}！`;
+    } else {
+      errorDetail = `<b>运算符号选对了，但数字装填或结果有偏差！</b>`;
+    }
+
+    $('modalBody').innerHTML = `
+      <div style="color:#f87171; font-weight:800; margin-bottom:6px;">${errorDetail}</div>
+      <div style="color:#38bdf8; font-weight:800; margin-bottom:6px;">正确调度方案：${currentQ.ansA} ${currentQ.ansOp} ${currentQ.ansB} = ${currentQ.ansVal}</div>
+      <div>${currentQ.explain}</div>
+    `;
+    $('modalOverlay').classList.add('show');
+  }
+};
+
+$('btnModalNext').onclick = () => {
+  $('modalOverlay').classList.remove('show');
+  qIndex++;
+  if(qIndex < questions.length) {
+    loadQuestion(qIndex);
+  } else {
+    // 战区清空结算
+    alert(`🎖️ 报告王牌调度官！本轮10个战区任务已全部完成！\n获得丰厚战备军饷，前往机库解锁心仪战车战机吧！`);
+    switchView('viewHome');
+  }
+};
+
+$('btnQuitMission').onclick = () => {
+  if(confirm('确定暂时撤回调度指挥基地吗？')) {
+    switchView('viewHome');
+  }
+};
+
+/* ================= 机库载具解锁与改装 ================= */
+function renderHangar() {
+  const grid = $('hangarGrid');
+  grid.innerHTML = '';
+
+  VEHICLES.forEach(v => {
+    const isUnlocked = S.unlockedVehicles.includes(v.id);
+    const isActive = (S.activeVehicle === v.id);
+
+    const card = document.createElement('div');
+    card.className = 'hangar-card' + (isActive ? ' active' : '');
+    card.innerHTML = `
+      <div class="h-emoji">${v.emoji}</div>
+      <div class="h-title">${v.name}</div>
+      <div style="font-size:11px; color:#94a3b8; margin:3px 0;">${v.desc}</div>
+      <div class="h-status" style="color:${isActive ? '#38bdf8' : (isUnlocked ? '#4ade80' : '#facc15')};">
+        ${isActive ? '● 当前出战' : (isUnlocked ? '已就绪 (点击出动)' : `💰 ${v.cost} 军饷解锁`)}
+      </div>
+    `;
+
+    card.onclick = () => {
+      playSound('click');
+      if(isActive) return;
+      if(isUnlocked) {
+        S.activeVehicle = v.id;
+        saveState();
+        renderHangar();
+        renderHud();
+      } else {
+        if(S.coins >= v.cost) {
+          if(confirm(`确定消耗 ${v.cost} 军饷解锁【${v.name}】吗？`)) {
+            S.coins -= v.cost;
+            S.unlockedVehicles.push(v.id);
+            S.activeVehicle = v.id;
+            saveState();
+            playSound('correct');
+            renderHangar();
+            renderHud();
+          }
+        } else {
+          alert(`军饷不足！还需要 ${v.cost - S.coins} 💰。多去前线完成调度任务赚取军饷吧！`);
+        }
+      }
+    };
+
+    grid.appendChild(card);
+  });
+}
+
+/* ================= 按钮事件绑定 ================= */
+$('btnStartMission').onclick = () => { playSound('click'); startMission(); };
+$('btnHangar').onclick = () => { playSound('click'); switchView('viewHangar'); renderHangar(); };
+$('btnHangarBack').onclick = () => { playSound('click'); switchView('viewHome'); };
+$('btnReview').onclick = () => { playSound('click'); switchView('viewReview'); };
+$('btnReviewBack').onclick = () => { playSound('click'); switchView('viewHome'); };
+
+// 首次点击初始化音效上下文
+document.addEventListener('pointerdown', () => getAC(), { once:true });
+
+/* ================= 初始化启动 ================= */
+renderHud();
+})();
+</script>
+</body>
+</html>
