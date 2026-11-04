@@ -406,25 +406,6 @@ function genQuestions() {
   return list.sort(() => Math.random() - 0.5);
 }
 
-  // 8. 速度行程模型（总路程 ÷ 时间 = 时速）
-  for(let i=0; i<3; i++){
-    const speed = ri(50, 80);
-    const hours = ri(2, 5);
-    const dist = speed * hours;
-    list.push({
-      type: 'div',
-      tag: '行程时速（已知总路程）',
-      text: `一辆无人侦察巡逻车 <b>${hours}</b> 小时在战地巡逻了 <b>${dist}</b> 千米。这辆侦察巡逻车平均每小时行驶多少千米？`,
-      ansA: dist, ansOp: '÷', ansB: hours, ansVal: speed,
-      nums: [dist, hours, speed, dist/2, speed*2],
-      explain: `已知总路程是 <b>${dist}</b> 千米，用了 ${hours} 小时，求平均每小时跑多少千米（速度），用除法：${dist} ÷ ${hours} = ${speed} 千米/时。`
-    });
-  }
-
-  // 打乱题目顺序
-  return list.sort(() => Math.random() - 0.5);
-}
-
 /* ================= 存档状态与管理 ================= */
 const SAVE_KEY = 'ace_commander_save_v1';
 let S = loadSave();
