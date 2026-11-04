@@ -68,8 +68,10 @@
     <div class="stat"><span>⛰️ 登山者等级</span><b id="mLevel">新手登山者</b></div>
     <div class="stat"><span>🏆 最高海拔纪录</span><b id="mBest">0 m</b></div>
     <div class="stat"><span>💰 金币</span><b id="mCoins">0</b></div>
+    <div class="stat" id="mCurVehicleRow" style="background:rgba(56,189,248,.15); border:1px solid rgba(56,189,248,.3);"><span>🛸 当前座驾</span><b id="mCurVehicle" style="color:#38bdf8;">小张徒步 🥾</b></div>
     <div id="mBadges"></div>
     <button class="btn" id="btnStart">开始登山</button>
+    <button class="btn ghost" id="btnVehicles" style="background:linear-gradient(135deg,rgba(56,189,248,.25),rgba(2,132,199,.15)); border:1px solid rgba(56,189,248,.4); color:#38bdf8;">🛸 特遣神车库 (联动解锁)</button>
     <button class="btn ghost" id="btnShop">🧗 装备升级</button>
     <div class="mute-row">音效 <button class="mbtn" id="btnMute">开</button>　音乐 <button class="mbtn" id="btnMusic">开</button></div>
     <div class="tip">左右滑动 / ←→ 换跑道 · 上滑 / ↑ 跳跃<br>💧 喝水补能量 · 🍗🍖 吃肉水果抗饿<br>撞上障碍会摔下山，冲到 8848 米登顶！</div>
@@ -83,6 +85,16 @@
     <div class="coins-left">💰 金币余额：<span id="sCoins">0</span></div>
     <div id="shopList"></div>
     <button class="btn ghost" id="btnShopBack">返 回</button>
+  </div>
+</div>
+
+<!-- 联动特遣神车库 -->
+<div id="ovVehicles" class="overlay hidden">
+  <div class="panel" style="width:min(92vw,390px);">
+    <h2 style="color:#38bdf8;">🛸 特遣神车库</h2>
+    <div class="sub" style="font-size:12px; margin-bottom:10px;">在《王牌调度官》做对数学题赚军饷即可解锁名车名机，开上山巅！</div>
+    <div id="vehicleList" style="text-align:left; max-height:55vh; overflow-y:auto; padding-right:2px;"></div>
+    <button class="btn ghost" id="btnVehicleBack">返 回</button>
   </div>
 </div>
 
@@ -138,10 +150,42 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 const SAVE_KEY = 'mountainRunSave8848';
 const save = load();
 function load(){
-  const def = { best:0, totalAlt:0, coins:0, muted:false, summits:0, upg:{water:0,food:0,magnet:0,shield:0,coin:0,boots:0} };
+  const def = { best:0, totalAlt:0, coins:0, muted:false, summits:0, activeVehicle:'v_hiker', upg:{water:0,food:0,magnet:0,shield:0,coin:0,boots:0} };
   try { return Object.assign(def, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch(e){ return def; }
 }
 function persist(){ try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e){} }
+
+/* ================= 王牌特遣座驾库（与王牌调度官应用题答题共享） ================= */
+const VEHICLES_META = [
+  { id:'v_hiker', name:'小张徒步', emoji:'🥾', desc:'登山客原型 · 纯手工攀登', perk:'标准攀登体质', color:'#e2e8f0', unlocked:true },
+  { id:'v_su7',   name:'小米 SU7 Ultra', emoji:'🏎️', desc:'赛道级电驱超跑 · 纽北流光', perk:'⚡ 速度+14% 极速冲顶', color:'#facc15' },
+  { id:'v_u9',    name:'比亚迪 仰望 U9', emoji:'⚡', desc:'云辇超跑特技 · 易四方四电机', perk:'🦘 起跳高度+30% 滞空延长', color:'#38bdf8' },
+  { id:'v_cyber', name:'特斯拉 Cybertruck', emoji:'🚐', desc:'赛博不锈钢装甲 · 防弹车身', perk:'🛡️ 开局额外赠送1层护盾', color:'#94a3b8' },
+  { id:'v_911',   name:'保时捷 911 GT3 RS', emoji:'🏁', desc:'德系操控图腾 · 赛道风刀', perk:'💨 左右变轨敏捷度翻倍', color:'#f43f5e' },
+  { id:'v_787',   name:'波音 787 梦想客机', emoji:'✈️', desc:'超宽碳纤机翼 · 空天巡航', perk:'🕊️ 腾空重力减少35% 超长滑翔', color:'#60a5fa' },
+  { id:'v_a380',  name:'空客 A380 巨无霸', emoji:'🛫', desc:'双层四发空中客车 · 航油储备', perk:'💧 水分与饱食消耗减少40%', color:'#a855f7' },
+  { id:'v_j20',   name:'歼-20“威龙”战机', emoji:'🚀', desc:'五代隐身超音速空天王牌', perk:'🔥 免疫普通岩石撞击伤害', color:'#4ade80' },
+];
+
+function getSharedVehicles(){
+  try {
+    const raw = localStorage.getItem('xiaozhang_shared_vehicles');
+    if(raw) {
+      const data = JSON.parse(raw);
+      return data.unlocked || ['v_su7'];
+    }
+  } catch(e){}
+  return ['v_su7'];
+}
+
+function getActiveVehicleId(){
+  return save.activeVehicle || 'v_hiker';
+}
+
+function getCurVehicle(){
+  const vid = getActiveVehicleId();
+  return VEHICLES_META.find(x => x.id === vid) || VEHICLES_META[0];
+}
 
 /* ================= 升级定义 ================= */
 const UPGS = [
@@ -306,10 +350,12 @@ let player, runStats, nextSpawnAlt, lastWaterAlt, gameTime, shake, deathSlow, su
 function newRun(){
   const waterMax = 100 + save.upg.water*15;
   const foodMax = 100 + save.upg.food*15;
+  const curV = getActiveVehicleId();
+  const extraShield = (curV === 'v_cyber') ? 1 : 0;
   player = {
     lane:1, x:LANES()[1], airH:0, airV:0, grounded:true,
     water:waterMax, waterMax, food:foodMax, foodMax,
-    shields:Math.min(save.upg.shield, 3), magnetT:0, inv:0, dead:false, run:0, alt:0, summit:false, lowWarnT:0
+    shields:Math.min(save.upg.shield + extraShield, 4), magnetT:0, inv:0, dead:false, run:0, alt:0, summit:false, lowWarnT:0
   };
   runStats = { alt0:save.totalAlt, coins:0, summitBonus:false };
   ents = []; particles = []; floaters = [];
@@ -319,8 +365,9 @@ function newRun(){
 function speedNow(){
   const boots = 1 + save.upg.boots*0.05;
   const hungry = player.food <= 0 ? 0.68 : 1;
+  const vMult = (getActiveVehicleId() === 'v_su7') ? 1.14 : 1.0;
   // 开局 400（原520降23%），随海拔缓升，封顶 +460（最高约860）
-  return (400 + Math.min(player.alt*0.010, 460)) * boots * hungry;
+  return (400 + Math.min(player.alt*0.010, 460)) * boots * hungry * vMult;
 }
 const altM = px => px / 10;
 
@@ -426,7 +473,9 @@ function moveLane(d){
 }
 function jump(){
   if(S.state!=='playing' || player.dead) return;
-  if(player.grounded){ player.airV = 760; player.grounded = false; sfx('jump'); dust(); }
+  const isU9 = (getActiveVehicleId() === 'v_u9');
+  const jumpV = isU9 ? 960 : 760;
+  if(player.grounded){ player.airV = jumpV; player.grounded = false; sfx('jump'); dust(); }
 }
 function fastFall(){ if(!player.grounded) player.airV = -1500; }
 
@@ -528,21 +577,25 @@ function update(dt){
   const spd = speedNow();
   player.alt += spd * sdt;
 
-  // 轨道插值
+  // 轨道插值（保时捷911响应翻倍）
+  const curV = getActiveVehicleId();
+  const laneSpeed = (curV === 'v_911') ? 26 : 13;
   const tx = LANES()[player.lane];
-  player.x += (tx - player.x) * Math.min(1, 13*sdt);
+  player.x += (tx - player.x) * Math.min(1, laneSpeed*sdt);
 
-  // 跳跃物理
+  // 跳跃物理（波音787超轻滑翔）
+  const gravity = (curV === 'v_787') ? 1600 : 2600;
   if(!player.grounded){
-    player.airH += player.airV * sdt; player.airV -= 2600*sdt;
+    player.airH += player.airV * sdt; player.airV -= gravity*sdt;
     if(player.airH <= 0){ player.airH = 0; player.grounded = true; player.airV = 0; dust(); }
   }
 
-  // 资源消耗
+  // 资源消耗（空客A380超级省油省水）
   if(!player.dead){
-    const drain = 3 + spd/520;
+    const drainMult = (curV === 'v_a380') ? 0.6 : 1.0;
+    const drain = (3 + spd/520) * drainMult;
     player.water = Math.max(0, player.water - drain*sdt);
-    player.food = Math.max(0, player.food - 2.2*sdt);
+    player.food = Math.max(0, player.food - 2.2*drainMult*sdt);
     if(player.water <= 0){ runStats.reason = '💧 脱水力竭，倒在了 ' + Math.floor(altM(player.alt)) + ' 米'; player.dead = true; deathSlow = 1; shake = 10; sfx('crash'); setTimeout(()=>finishRun(false), 900); return; }
     player.lowWarnT -= sdt;
     if(player.water < player.waterMax*0.22 && player.lowWarnT <= 0){ sfx('low'); player.lowWarnT = 2.2; }
@@ -594,7 +647,14 @@ function update(dt){
           break;
         }
         case 'rock': {
-          if(boxHit(pbox, ex-32, ey-56, 64, 56)) hitObstacle(e, '撞上了岩石', ex, ey);
+          if(boxHit(pbox, ex-32, ey-56, 64, 56)) {
+            if(getActiveVehicleId() === 'v_j20') {
+              e.dead = true; burst(ex, ey, '#4ade80', 12, 280, true); sfx('crash');
+              floatText(player.x, groundY()-110, '歼-20 威龙粉碎岩石！', '#4ade80');
+            } else {
+              hitObstacle(e, '撞上了岩石', ex, ey);
+            }
+          }
           break;
         }
         case 'wall': {
@@ -1025,7 +1085,15 @@ function drawPlayer(t){
     ctx.fillText('×' + player.shields, 30, -50);
   }
 
-  // 腿
+  // 判断是否驾驶特遣名车名机
+  const curV = getActiveVehicleId();
+  if(curV !== 'v_hiker') {
+    drawVehicleSprite(curV, t);
+    ctx.restore();
+    return;
+  }
+
+  // 腿（徒步模式）
   const legSwing = player.grounded ? Math.sin(t*16)*10 : 0;
   ctx.strokeStyle = '#2c3a55'; ctx.lineWidth = 7; ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(-5, -18); ctx.lineTo(-5 + legSwing, -2); ctx.stroke();
@@ -1059,6 +1127,187 @@ function drawPlayer(t){
   ctx.fillStyle = 'rgba(30,40,60,.9)'; ctx.fillRect(5, -58, 6, 3.5);
 
   ctx.restore();
+}
+
+/* ================= 特遣名车名机专属矢量渲染 ================= */
+function drawVehicleSprite(vid, t){
+  const flameH = (Math.sin(t*35) + 1.5) * 8;
+
+  // 1. 小米 SU7 Ultra（闪电黄超跑）
+  if(vid === 'v_su7'){
+    // 双出尾焰
+    ctx.fillStyle = 'rgba(56,189,248,.85)';
+    ctx.fillRect(-11, 2, 4, flameH); ctx.fillRect(7, 2, 4, flameH);
+    ctx.fillStyle = 'rgba(255,255,255,.9)';
+    ctx.fillRect(-10, 2, 2, flameH*0.6); ctx.fillRect(8, 2, 2, flameH*0.6);
+    // 车身轮廓
+    ctx.fillStyle = '#facc15'; // 亮黄车漆
+    ctx.beginPath(); ctx.roundRect(-18, -44, 36, 46, 10); ctx.fill();
+    // 熏黑车顶与前挡
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath(); ctx.roundRect(-13, -34, 26, 22, 6); ctx.fill();
+    ctx.fillStyle = '#38bdf8'; // 前挡反光
+    ctx.beginPath(); ctx.roundRect(-11, -32, 22, 8, 3); ctx.fill();
+    // 大号运动尾翼
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-22, -2, 44, 5);
+    ctx.fillRect(-14, -6, 4, 6); ctx.fillRect(10, -6, 4, 6);
+    // 宽体车轮
+    ctx.fillStyle = '#18181b';
+    ctx.fillRect(-21, -38, 4, 10); ctx.fillRect(17, -38, 4, 10);
+    ctx.fillRect(-21, -12, 4, 11); ctx.fillRect(17, -12, 4, 11);
+    // 车前大灯光柱
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(-14, -45, 6, 3); ctx.fillRect(8, -45, 6, 3);
+  }
+  // 2. 比亚迪 仰望 U9（天空蓝科技超跑）
+  else if(vid === 'v_u9'){
+    // 能量光环尾焰
+    ctx.fillStyle = 'rgba(56,189,248,.9)';
+    ctx.beginPath(); ctx.arc(0, 4, 6+Math.sin(t*30)*3, 0, 7); ctx.fill();
+    // 流线型碳纤车身
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath(); ctx.roundRect(-19, -46, 38, 48, 12); ctx.fill();
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(-19, -24, 38, 8);
+    // 全景天幕
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath(); ctx.roundRect(-13, -36, 26, 24, 6); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.4)';
+    ctx.fillRect(-9, -32, 18, 5);
+    // 碳纤维扰流尾翼与侧裙
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-23, -1, 46, 5);
+    // 四轮电机
+    ctx.fillStyle = '#27272a';
+    ctx.fillRect(-22, -40, 4, 11); ctx.fillRect(18, -40, 4, 11);
+    ctx.fillRect(-22, -14, 4, 12); ctx.fillRect(18, -14, 4, 12);
+  }
+  // 3. 特斯拉 Cybertruck（不锈钢几何多面体）
+  else if(vid === 'v_cyber'){
+    ctx.fillStyle = '#94a3b8'; // 冷轧不锈钢色
+    ctx.beginPath();
+    ctx.moveTo(-18, 0); ctx.lineTo(-15, -48); ctx.lineTo(15, -48); ctx.lineTo(18, 0); ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.5; ctx.stroke();
+    // 贯穿式赛博前灯带
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(-14, -47, 28, 3);
+    // 三角形硬朗车窗
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.moveTo(-12, -10); ctx.lineTo(-9, -38); ctx.lineTo(9, -38); ctx.lineTo(12, -10); ctx.closePath();
+    ctx.fill();
+    // 红色贯穿尾灯
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(-17, -2, 34, 3);
+    // 越野巨胎
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-22, -42, 5, 12); ctx.fillRect(17, -42, 5, 12);
+    ctx.fillRect(-22, -16, 5, 13); ctx.fillRect(17, -16, 5, 13);
+  }
+  // 4. 保时捷 911 GT3 RS（极速红魔）
+  else if(vid === 'v_911'){
+    // 经典蛙眼前脸
+    ctx.fillStyle = '#f43f5e'; // 竞速红
+    ctx.beginPath(); ctx.roundRect(-17, -45, 34, 46, 10); ctx.fill();
+    // 圆润青蛙车顶
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath(); ctx.ellipse(0, -22, 12, 15, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#94a3b8';
+    ctx.beginPath(); ctx.ellipse(0, -28, 9, 7, 0, 0, 7); ctx.fill();
+    // 经典鹅颈双层天际大尾翼
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-24, -2, 48, 6);
+    ctx.fillRect(-15, -6, 3, 6); ctx.fillRect(12, -6, 3, 6);
+    // 熏黑轻量化锻造轮毂
+    ctx.fillStyle = '#18181b';
+    ctx.fillRect(-20, -38, 4, 10); ctx.fillRect(16, -38, 4, 10);
+    ctx.fillRect(-20, -12, 4, 11); ctx.fillRect(16, -12, 4, 11);
+    // 椭圆蛙眼大灯
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.ellipse(-10, -43, 3, 4, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(10, -43, 3, 4, 0, 0, 7); ctx.fill();
+  }
+  // 5. 波音 787 梦想客机（蓝白流线双发客机）
+  else if(vid === 'v_787'){
+    // 双发喷气羽流
+    ctx.fillStyle = 'rgba(96,165,250,.8)';
+    ctx.fillRect(-17, -2, 5, flameH*1.2); ctx.fillRect(12, -2, 5, flameH*1.2);
+    // 细长机身
+    ctx.fillStyle = '#f8fafc';
+    ctx.beginPath(); ctx.roundRect(-9, -58, 18, 58, 8); ctx.fill();
+    // 驾驶舱墨镜风挡
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath(); ctx.roundRect(-6, -55, 12, 5, 2); ctx.fill();
+    // 碳纤维大展弦比后掠翼
+    ctx.fillStyle = '#60a5fa';
+    ctx.beginPath();
+    ctx.moveTo(0, -32); ctx.lineTo(-44, -14); ctx.lineTo(-40, -8); ctx.lineTo(0, -20);
+    ctx.lineTo(40, -8); ctx.lineTo(44, -14); ctx.closePath();
+    ctx.fill();
+    // 双发翼下涡扇引擎
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(-20, -16, 7, 14); ctx.fillRect(13, -16, 7, 14);
+    // T型平尾
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(-16, -4, 32, 4);
+  }
+  // 6. 空客 A380 空中巨无霸（四发双层超重型客机）
+  else if(vid === 'v_a380'){
+    // 四发引擎喷射
+    ctx.fillStyle = 'rgba(168,85,247,.8)';
+    [-29, -17, 11, 23].forEach(px => ctx.fillRect(px, -2, 5, flameH));
+    // 肥硕双层机身
+    ctx.fillStyle = '#f8fafc';
+    ctx.beginPath(); ctx.roundRect(-14, -60, 28, 60, 10); ctx.fill();
+    // 双层舷窗点阵
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-10, -56, 20, 4);
+    ctx.fillRect(-10, -48, 20, 3);
+    // 超宽展弦比主翼
+    ctx.fillStyle = '#a855f7';
+    ctx.beginPath();
+    ctx.moveTo(0, -35); ctx.lineTo(-52, -12); ctx.lineTo(-48, -4); ctx.lineTo(0, -22);
+    ctx.lineTo(48, -4); ctx.lineTo(52, -12); ctx.closePath();
+    ctx.fill();
+    // 4台罗罗巨型涡扇引擎
+    ctx.fillStyle = '#334155';
+    [-31, -19, 11, 23].forEach(px => ctx.fillRect(px, -18, 7, 16));
+    // 宽大十字垂直尾翼
+    ctx.fillStyle = '#7e22ce';
+    ctx.fillRect(-20, -6, 40, 5);
+  }
+  // 7. 歼-20“威龙”隐身战机
+  else if(vid === 'v_j20'){
+    // 矢量喷管暴烈蓝焰
+    ctx.fillStyle = 'rgba(74,222,128,.95)';
+    ctx.fillRect(-8, 0, 4, flameH*1.5); ctx.fillRect(4, 0, 4, flameH*1.5);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-7, 0, 2, flameH*0.8); ctx.fillRect(5, 0, 2, flameH*0.8);
+    // 菱形机头与升力体机身
+    ctx.fillStyle = '#475569';
+    ctx.beginPath();
+    ctx.moveTo(0, -62); ctx.lineTo(-12, -35); ctx.lineTo(-12, -4); ctx.lineTo(12, -4); ctx.lineTo(12, -35);
+    ctx.closePath(); ctx.fill();
+    // 镀膜金色座舱盖
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath(); ctx.ellipse(0, -44, 4, 9, 0, 0, 7); ctx.fill();
+    // 鸭翼
+    ctx.fillStyle = '#334155';
+    ctx.beginPath();
+    ctx.moveTo(-10, -40); ctx.lineTo(-24, -34); ctx.lineTo(-20, -30); ctx.lineTo(-10, -32); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(10, -40); ctx.lineTo(24, -34); ctx.lineTo(20, -30); ctx.lineTo(10, -32); ctx.closePath(); ctx.fill();
+    // 大后掠主三角翼
+    ctx.fillStyle = '#334155';
+    ctx.beginPath();
+    ctx.moveTo(0, -26); ctx.lineTo(-42, -2); ctx.lineTo(-34, 0); ctx.lineTo(0, -10);
+    ctx.lineTo(34, 0); ctx.lineTo(42, -2); ctx.closePath(); ctx.fill();
+    // 外倾全动双垂尾
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-14, -10, 4, 12); ctx.fillRect(10, -10, 4, 12);
+  }
 }
 
 /* ---- HUD ---- */
@@ -1134,12 +1383,15 @@ function drawMenuBg(){
 
 /* ================= UI 逻辑 ================= */
 const $ = id => document.getElementById(id);
-function show(id){ ['ovMenu','ovShop','ovResult','ovPause'].forEach(o=>$(o).classList.add('hidden')); if(id) $(id).classList.remove('hidden'); }
+function show(id){ ['ovMenu','ovShop','ovVehicles','ovResult','ovPause'].forEach(o=>$(o).classList.add('hidden')); if(id) $(id).classList.remove('hidden'); }
 
 function refreshMenu(){
   $('mLevel').textContent = levelInfo(save.totalAlt);
   $('mBest').textContent = save.best.toLocaleString() + ' m';
   $('mCoins').textContent = save.coins.toLocaleString();
+  const curV = getCurVehicle();
+  $('mCurVehicle').textContent = `${curV.emoji} ${curV.name}`;
+  $('mCurVehicle').style.color = curV.color || '#38bdf8';
   const badges = [];
   if(save.summits > 0) badges.push('<span class="badge gold">🏔️ 登顶 ×' + save.summits + '</span>');
   badges.push('<span class="badge">累计爬升 ' + save.totalAlt.toLocaleString() + ' m</span>');
@@ -1147,6 +1399,49 @@ function refreshMenu(){
   $('btnMute').textContent = save.muted ? '关' : '开';
   $('btnMusic').textContent = save.music === false ? '关' : '开';
 }
+
+function refreshVehicles(){
+  const list = $('vehicleList'); list.innerHTML = '';
+  const shared = getSharedVehicles();
+  const curActive = getActiveVehicleId();
+
+  VEHICLES_META.forEach(v => {
+    const isUnlocked = (v.id === 'v_hiker') || shared.includes(v.id);
+    const isDriving = (curActive === v.id);
+
+    const div = document.createElement('div');
+    div.style.cssText = `background:rgba(255,255,255,.05); border-radius:12px; padding:10px 12px; margin:8px 0; display:flex; align-items:center; gap:10px; border:1px solid ${isDriving?'#38bdf8':'rgba(255,255,255,.1)'};`;
+    div.innerHTML = `
+      <div style="font-size:32px; width:40px; text-align:center;">${v.emoji}</div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:15px; font-weight:800; color:${v.color};">${v.name}</div>
+        <div style="font-size:11px; color:#9db1d6; margin-top:2px;">${v.desc}</div>
+        <div style="font-size:11px; color:#facc15; font-weight:700; margin-top:2px;">${v.perk}</div>
+      </div>
+      <button class="buy" style="padding:8px 12px; font-size:12px; background:${isDriving?'#0284c7':(isUnlocked?'linear-gradient(180deg,#ffd76e,#f5a623)':'#334155')}; color:${isDriving||!isUnlocked?'#fff':'#1a2740'};">
+        ${isDriving ? '出战中' : (isUnlocked ? '换乘' : '去答题解锁')}
+      </button>
+    `;
+
+    div.querySelector('button').onclick = () => {
+      sfx('ui');
+      if(isDriving) return;
+      if(isUnlocked) {
+        save.activeVehicle = v.id;
+        persist();
+        refreshMenu();
+        refreshVehicles();
+      } else {
+        if(confirm(`【${v.name}】需要在《王牌调度官》中通过做对数学应用题、积累军饷解锁！\n是否立即前往《王牌调度官》做题赚军饷？`)) {
+          window.location.href = '../ace-commander/index.html';
+        }
+      }
+    };
+
+    list.appendChild(div);
+  });
+}
+
 function refreshShop(){
   $('sCoins').textContent = save.coins.toLocaleString();
   const list = $('shopList'); list.innerHTML = '';
@@ -1174,6 +1469,8 @@ function resumeGame(){ if(S.state!=='paused') return; S.state='playing'; show(nu
 
 $('btnStart').addEventListener('click', startRun);
 $('btnRetry').addEventListener('click', startRun);
+$('btnVehicles').addEventListener('click', ()=>{ sfx('ui'); refreshVehicles(); show('ovVehicles'); });
+$('btnVehicleBack').addEventListener('click', ()=>{ sfx('ui'); refreshMenu(); show('ovMenu'); });
 $('btnShop').addEventListener('click', ()=>{ sfx('ui'); refreshShop(); show('ovShop'); });
 $('btnRShop').addEventListener('click', ()=>{ sfx('ui'); refreshMenu(); refreshShop(); show('ovShop'); });
 $('btnShopBack').addEventListener('click', ()=>{ sfx('ui'); refreshMenu(); show(S.state==='dead' ? 'ovResult' : 'ovMenu'); });

@@ -244,20 +244,22 @@ const $ = id => document.getElementById(id);
 
 /* ================= 载具与军衔体系 ================= */
 const VEHICLES = [
-  { id:'v1', name:'突击超跑战车', emoji:'🏎️', desc:'高机动近地调度指挥车', cost:0, unlocked:true },
-  { id:'v2', name:'狂暴装甲越野车', emoji:'🚙', desc:'重装防护，耐恶劣战地', cost:150, unlocked:false },
-  { id:'v3', name:'武直-20“黑鹰”', emoji:'🚁', desc:'垂直起降，全地形突防', cost:350, unlocked:false },
-  { id:'v4', name:'歼-20“威龙”隐身战机', emoji:'✈️', desc:'超音速巡航，空天霸王', cost:700, unlocked:false },
-  { id:'v5', name:'空天重型战略运输机', emoji:'🚀', desc:'极限载重，空天一体战略投送', cost:1200, unlocked:false },
+  { id:'v_su7', name:'小米 SU7 Ultra', emoji:'🏎️', desc:'赛道巅峰极速超跑 (小张登山：速度+12%)', cost:0, color:'#facc15' },
+  { id:'v_u9', name:'比亚迪 仰望 U9', emoji:'⚡', desc:'云辇超跑特技 (小张登山：跳跃+25% 空中悬停)', cost:150, color:'#38bdf8' },
+  { id:'v_cyber', name:'特斯拉 Cybertruck', emoji:'🚐', desc:'赛博不锈钢重甲 (小张登山：开局自带1层护盾)', cost:320, color:'#94a3b8' },
+  { id:'v_911', name:'保时捷 911 GT3 RS', emoji:'🏁', desc:'德系操控图腾 (小张登山：左右变轨瞬间响应)', cost:520, color:'#f43f5e' },
+  { id:'v_787', name:'波音 787 梦想客机', emoji:'✈️', desc:'超宽碳纤机翼 (小张登山：滞空时间大幅翻倍)', cost:750, color:'#60a5fa' },
+  { id:'v_a380', name:'空客 A380 空中巨无霸', emoji:'🛫', desc:'双层四发巨无霸 (小张登山：水和食物消耗减半)', cost:1000, color:'#a855f7' },
+  { id:'v_j20', name:'歼-20“威龙”隐身战机', emoji:'🚀', desc:'五代极速重装王牌 (全地形无视普通滚石撞击)', cost:1500, color:'#4ade80' },
 ];
 
 const RANKS = [
   [0, '新训调度官', '🎖️'],
-  [50, '装甲特遣中尉', '⭐'],
-  [150, '飞行调度上尉', '🌟'],
-  [300, '空天突击少校', '🏆'],
-  [600, '陆空王牌上校', '🦅'],
-  [1200, '极速超能司令', '👑'],
+  [60, '装甲特遣中尉', '⭐'],
+  [180, '极速车队上尉', '🌟'],
+  [400, '空天突击少校', '🏆'],
+  [800, '陆空王牌上校', '🦅'],
+  [1400, '极速超能司令', '👑'],
 ];
 
 /* ================= 题型生成引擎（广州三年级典型题库） ================= */
@@ -266,110 +268,143 @@ function genQuestions() {
   const list = [];
   const ri = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
 
-  // 1. 每份数 × 份数 = 总数（战车部件）
-  for(let i=0; i<4; i++){
-    const cars = ri(4, 9);
-    const wheels = ri(4, 8);
-    const total = cars * wheels;
-    list.push({
-      type: 'mul',
-      tag: '车队装配（求总数）',
-      text: `特遣基地正在装配 <b>${cars}</b> 辆特战装甲越野车，每辆越野车需要配备 <b>${wheels}</b> 个防爆高压轮胎。装备车间一共需要准备多少个轮胎？`,
-      ansA: cars, ansOp: '×', ansB: wheels, ansVal: total,
-      nums: [cars, wheels, total, cars+wheels, total-4],
-      explain: `题目问的是“一共需要多少个”，属于<b>不知道总数求总数</b>。一辆车要 ${wheels} 个，有 ${cars} 辆，也就是求 ${cars} 个 ${wheels} 是多少，用乘法：${wheels} × ${cars} = ${total}（或 ${cars} × ${wheels} = ${total}）个。`
-    });
-  }
-
-  // 2. 战机编队总数（求总数）
+  // 1. 每份数 × 份数 = 总数（小米 SU7 & 仰望电机与部件装配）
   for(let i=0; i<3; i++){
-    const groups = ri(3, 7);
-    const planes = ri(4, 6);
-    const total = groups * planes;
+    const cars = ri(4, 8);
+    const total = cars * 4;
     list.push({
       type: 'mul',
-      tag: '战机列队（求总数）',
-      text: `白云机场上空组织阅兵飞行表演，空中一共有 <b>${groups}</b> 个飞行中队，每个中队整齐编组了 <b>${planes}</b> 架歼-20战机。参加阅兵的歼-20一共有多少架？`,
-      ansA: groups, ansOp: '×', ansB: planes, ansVal: total,
-      nums: [groups, planes, total, total+3, groups*2],
-      explain: `求阅兵飞机一共有多少架，已知有 ${groups} 个中队，每队 ${planes} 架，属于<b>求几个几是多少</b>，用乘法：${groups} × ${planes} = ${total} 架。`
+      tag: '比亚迪仰望装配（求总数）',
+      text: `比亚迪制造基地正在紧急装配 <b>${cars}</b> 辆仰望U8/U9豪华越野超跑，每辆车都标配 <b>4</b> 个易四方独立驱动轮边电机。工厂总装车间一共需要准备多少个驱动电机？`,
+      ansA: cars, ansOp: '×', ansB: 4, ansVal: total,
+      nums: [cars, 4, total, cars+4, total-4],
+      explain: `题目要求“一共需要多少个”，属于<b>不知道总数求总数</b>。一辆车装 4 个电机，有 ${cars} 辆，也就是求 ${cars} 个 4 是多少，用乘法：4 × ${cars} = ${total}（或 ${cars} × 4 = ${total}）个。`
     });
   }
 
-  // 3. 等分除：总数 ÷ 份数 = 每份数
+  // 2. 特斯拉 Cybertruck 4680电池整列（求总数）
+  for(let i=0; i<3; i++){
+    const rows = ri(6, 9);
+    const cols = ri(6, 8);
+    const total = rows * cols;
+    list.push({
+      type: 'mul',
+      tag: '特斯拉电池矩阵（求总数）',
+      text: `特斯拉超级工厂组装 Cybertruck 赛博皮卡的底盘大电池包，每个模组整齐排列了 <b>${rows}</b> 行，每行有 <b>${cols}</b> 枚高能4680电池。一个电池模组一共有多少枚电池？`,
+      ansA: rows, ansOp: '×', ansB: cols, ansVal: total,
+      nums: [rows, cols, total, rows+cols, total+2],
+      explain: `求电池一共有多少枚，排成 ${rows} 行，每行 ${cols} 枚，属于经典的<b>方阵点子图模型（求几个几）</b>，用乘法：${rows} × ${cols} = ${total} 枚。`
+    });
+  }
+
+  // 3. 空客A380与波音787机组人员等分除：总数 ÷ 份数 = 每份数
   for(let i=0; i<4; i++){
-    const squads = ri(4, 8);
-    const perSquad = ri(5, 9);
-    const total = squads * perSquad;
+    const planes = ri(4, 7);
+    const perCrew = ri(6, 9);
+    const total = planes * perCrew;
     list.push({
       type: 'div',
-      tag: '人员等分（已知总数）',
-      text: `空降特遣队紧急集结了 <b>${total}</b> 名伞兵突击队员，基地指挥官下令将他们平均分成 <b>${squads}</b> 个特战机组。请问每个机组分到多少名队员？`,
-      ansA: total, ansOp: '÷', ansB: squads, ansVal: perSquad,
-      nums: [total, squads, perSquad, total+squads, perSquad*2],
-      explain: `题目<b>总人数 ${total} 人已经知道</b>了，要把总数“平均分成” ${squads} 份，求每一份是多少，必须用除法：${total} ÷ ${squads} = ${perSquad} 名。`
+      tag: '南航客机机组分配（等分除）',
+      text: `广州白云国际机场南航机队召集了 <b>${total}</b> 名乘务人员，基地调度官将他们平均分配到 <b>${planes}</b> 架最新交付的空客A380/波音787大客机上。请问每架客机分配到几名乘务员？`,
+      ansA: total, ansOp: '÷', ansB: planes, ansVal: perCrew,
+      nums: [total, planes, perCrew, total+planes, perCrew*2],
+      explain: `<b>总人数 ${total} 人已经给出</b>了！要把总人数平均分到 ${planes} 架飞机上，求每架分几个，必须用除法：${total} ÷ ${planes} = ${perCrew} 名。`
     });
   }
 
-  // 4. 包含除：总数 ÷ 每份数 = 份数
+  // 4. 小米SU7 Ultra 充电桩与运送包含除：总数 ÷ 每份数 = 份数
   for(let i=0; i<4; i++){
-    const perPlane = ri(6, 9);
-    const planes = ri(4, 8);
-    const total = perPlane * planes;
+    const perTruck = ri(4, 6);
+    const trucks = ri(5, 9);
+    const total = perTruck * trucks;
     list.push({
       type: 'div',
-      tag: '容量分装（已知总数）',
-      text: `前线运来 <b>${total}</b> 桶航空燃油，每架运输直升机的副油箱一次只能装载 <b>${perPlane}</b> 桶。这些燃油需要装载几架直升机？`,
-      ansA: total, ansOp: '÷', ansB: perPlane, ansVal: planes,
-      nums: [total, perPlane, planes, total-perPlane, planes*3],
-      explain: `已知燃油总数是 <b>${total}</b> 桶，每架直升机要分走 ${perPlane} 桶，求能装几架，就是看 ${total} 里面有几个 ${perPlane}，用除法：${total} ÷ ${perPlane} = ${planes} 架。`
+      tag: '小米超跑运输（包含除）',
+      text: `小米汽车北京二期工厂新生产了 <b>${total}</b> 辆小米 SU7 Ultra 纽北赛道版超跑。每辆双层专用物流挂车一次只能装运 <b>${perTruck}</b> 辆。把这些超跑全部运往全国交付中心，一共需要几辆物流挂车？`,
+      ansA: total, ansOp: '÷', ansB: perTruck, ansVal: trucks,
+      nums: [total, perTruck, trucks, total-perTruck, trucks*2],
+      explain: `已知超跑总数是 <b>${total}</b> 辆，每辆大车运走 ${perTruck} 辆，求需要几辆车，就是看 ${total} 里面有几个 ${perTruck}，用除法：${total} ÷ ${perTruck} = ${trucks} 辆！`
     });
   }
 
-  // 5. 正向倍数（小求大：用乘法）
+  // 5. 保时捷与特斯拉正向倍数（小求大：乘法）
   for(let i=0; i<4; i++){
-    const small = ri(4, 8);
+    const porsche = ri(4, 8);
     const times = ri(3, 5);
-    const big = small * times;
+    const tesla = porsche * times;
     list.push({
       type: 'mul',
-      tag: '正向求倍数（乘法）',
-      text: `航母甲板上停靠了 <b>${small}</b> 架大型预警机，隐身战斗机的数量是预警机的 <b>${times}</b> 倍。甲板上一共有多少架隐身战斗机？`,
-      ansA: small, ansOp: '×', ansB: times, ansVal: big,
-      nums: [small, times, big, big+small, small*2],
-      explain: `预警机少（${small} 架），战斗机多（是预警机的 ${times} 倍）。求战斗机是多少，是小求大，用乘法：${small} × ${times} = ${big} 架！`
+      tag: '赛道车队倍数（正向乘法）',
+      text: `天马国际赛道维修区停放了 <b>${porsche}</b> 辆保时捷 911 GT3 RS，停放的特斯拉 Model S Plaid 数量是保时捷的 <b>${times}</b> 倍。维修区一共有多少辆特斯拉？`,
+      ansA: porsche, ansOp: '×', ansB: times, ansVal: tesla,
+      nums: [porsche, times, tesla, porsche+times, tesla+4],
+      explain: `保时捷数量少（基准量为 ${porsche} 辆），特斯拉多（是保时捷的 ${times} 倍）。求较大的特斯拉是多少，顺向算倍数，用乘法：${porsche} × ${times} = ${tesla} 辆！`
     });
   }
 
-  // 6. 逆向倍数（大求小：必考失分陷阱！用除法）
+  // 6. 逆向倍数（大求小：广州三年级校考必考压轴失分题！除法）
   for(let i=0; i<5; i++){
-    const small = ri(4, 9);
+    const bydU9 = ri(4, 9);
     const times = ri(3, 6);
-    const big = small * times;
+    const su7 = bydU9 * times;
     list.push({
       type: 'div',
-      tag: '逆向倍数陷阱（除法！）',
-      text: `陆空特遣基地停机坪上有 <b>${big}</b> 架武直-20武装直升机，<b>正好是重型无人机数量的 ${times} 倍</b>。请问基地里有多少架重型无人机？`,
-      ansA: big, ansOp: '÷', ansB: times, ansVal: small,
-      nums: [big, times, small, big*times, big-times],
-      explain: `🚨 <b>高频易错警报！</b>千万不能看到“${times}倍”就直接乘！武直直升机有 ${big} 架，它已经是无人机的 ${times} 倍了，说明无人机比直升机<b>更少</b>！求较小的无人机数量，要用除法：${big} ÷ ${times} = ${small} 架！`
+      tag: '逆向倍数陷阱（大求小·除法！）',
+      text: `广州车展展馆内展示了 <b>${su7}</b> 辆小米 SU7 Ultra 超跑，<b>正好是展出比亚迪仰望U9数量的 ${times} 倍</b>。请问展馆里一共有多少辆比亚迪仰望U9？`,
+      ansA: su7, ansOp: '÷', ansB: times, ansVal: bydU9,
+      nums: [su7, times, bydU9, su7*times, su7-times],
+      explain: `🚨 <b>警报！千千万万不能看到“${times}倍”就直接乘！</b>题目说了小米SU7有 ${su7} 辆，它已经是仰望U9的 ${times} 倍了，说明仰望U9数量<b>明显更少</b>！求较小的一倍量，必须用除法除回去：${su7} ÷ ${times} = ${bydU9} 辆！`
     });
   }
 
-  // 7. 速度行程模型（时速 × 时间 = 总路程）
+  // 7. 波音787与空客A380逆向倍数陷阱（航线实战）
+  for(let i=0; i<4; i++){
+    const boeing = ri(3, 8);
+    const times = ri(3, 5);
+    const airbus = boeing * times;
+    list.push({
+      type: 'div',
+      tag: '客机逆向倍数（大求小·除法！）',
+      text: `大湾区空域雷达上正在飞行的空客A380巨无霸有 <b>${airbus}</b> 架，<b>正好是波音787梦想客机数量的 ${times} 倍</b>。雷达屏幕上一共有多少架波音787梦想客机？`,
+      ansA: airbus, ansOp: '÷', ansB: times, ansVal: boeing,
+      nums: [airbus, times, boeing, airbus*times, boeing*2],
+      explain: `🚨 <b>注意审题！</b>空客A380有 ${airbus} 架，它是波音787的 ${times} 倍，说明波音787比较少。求较小的波音787，用除法：${airbus} ÷ ${times} = ${boeing} 架！`
+    });
+  }
+
+  // 8. 速度行程模型（时速 × 时间 = 总路程）
   for(let i=0; i<3; i++){
-    const speed = ri(60, 90);
-    const hours = ri(2, 4);
+    const speed = ri(240, 310);
+    const hours = ri(2, 3);
     const dist = speed * hours;
     list.push({
       type: 'mul',
-      tag: '行程速度（求总路程）',
-      text: `特警装甲补给车以每小时 <b>${speed}</b> 千米的速度向前线要塞急驰，连续行驶了 <b>${hours}</b> 小时。装甲车一共行驶了多少千米？`,
+      tag: '高铁/超跑极速航程（求总路程）',
+      text: `广深港高铁与保时捷工程试验车以每小时 <b>${speed}</b> 千米的速度在特种试验环道上全速飞驰，连续测试了 <b>${hours}</b> 小时。试验车一共行驶了多少千米？`,
       ansA: speed, ansOp: '×', ansB: hours, ansVal: dist,
-      nums: [speed, hours, dist, speed+hours, dist-20],
-      explain: `每小时行驶 ${speed} 千米（速度），行驶了 ${hours} 小时（时间），求一共跑了多远（总路程），用乘法：${speed} × ${hours} = ${dist} 千米。`
+      nums: [speed, hours, dist, speed+hours, dist-40],
+      explain: `每小时行驶 ${speed} 千米（速度），跑了 ${hours} 小时（时间），求一共跑了多长（总路程），用乘法：${speed} × ${hours} = ${dist} 千米。`
     });
   }
+
+  // 9. 波音/空客飞行速度模型（总航程 ÷ 时间 = 时速）
+  for(let i=0; i<3; i++){
+    const speed = ri(800, 920);
+    const hours = 2;
+    const dist = speed * hours;
+    list.push({
+      type: 'div',
+      tag: '民航客机巡航（求时速）',
+      text: `一架波音 787 梦想客机从广州白云机场直飞北京大兴机场，飞行航程共 <b>${dist}</b> 千米，飞行总共耗时 <b>${hours}</b> 小时。这架客机平均每小时飞行多少千米？`,
+      ansA: dist, ansOp: '÷', ansB: hours, ansVal: speed,
+      nums: [dist, hours, speed, dist/4, speed-50],
+      explain: `已知广州到北京的总飞行航程是 <b>${dist}</b> 千米，用了 ${hours} 小时，求每小时飞多少千米（速度），用除法：${dist} ÷ ${hours} = ${speed} 千米/时。`
+    });
+  }
+
+  // 打乱题目顺序
+  return list.sort(() => Math.random() - 0.5);
+}
 
   // 8. 速度行程模型（总路程 ÷ 时间 = 时速）
   for(let i=0; i<3; i++){
@@ -399,8 +434,8 @@ function defaultSave() {
     coins: 60,
     streak: 0,
     totalAnswered: 0,
-    activeVehicle: 'v1',
-    unlockedVehicles: ['v1'],
+    activeVehicle: 'v_su7',
+    unlockedVehicles: ['v_su7'],
     historyDate: new Date().toLocaleDateString()
   };
 }
@@ -408,7 +443,14 @@ function defaultSave() {
 function loadSave() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if(raw) return Object.assign(defaultSave(), JSON.parse(raw));
+    if(raw) {
+      const data = JSON.parse(raw);
+      if(data.activeVehicle === 'v1') data.activeVehicle = 'v_su7';
+      if(data.unlockedVehicles && data.unlockedVehicles.includes('v1')) {
+        data.unlockedVehicles = ['v_su7', ...data.unlockedVehicles.filter(x=>x!=='v1')];
+      }
+      return Object.assign(defaultSave(), data);
+    }
   } catch(e){}
   return defaultSave();
 }
@@ -416,6 +458,11 @@ function loadSave() {
 function saveState() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(S));
+    // 同步到跨游戏共享车库，小张登山可直接调取
+    localStorage.setItem('xiaozhang_shared_vehicles', JSON.stringify({
+      active: S.activeVehicle,
+      unlocked: S.unlockedVehicles
+    }));
   } catch(e){}
 }
 
