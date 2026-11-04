@@ -1332,12 +1332,22 @@ function getVehicleImg(vid) {
   return SVG_IMG_CACHE[vid];
 }
 
+const REAL_IMG_CACHE = {};
+function getRealPhotoImg(vid) {
+  if(!REAL_IMG_CACHE[vid]) {
+    const img = new Image();
+    img.src = 'assets/vehicles/' + vid + '.jpg';
+    REAL_IMG_CACHE[vid] = img;
+  }
+  return REAL_IMG_CACHE[vid];
+}
+
 function drawRealVehicleSvg(vid, t) {
-  const img = getVehicleImg(vid);
+  const img = getRealPhotoImg(vid);
   const flameH = (Math.sin(t*35) + 1.5) * 8;
   const isPlane = vid.startsWith('p_');
 
-  // 尾部等离子流光尾焰
+  // 尾部等离子火箭尾焰
   ctx.save();
   ctx.fillStyle = isPlane ? 'rgba(74,222,128,.9)' : 'rgba(56,189,248,.85)';
   ctx.fillRect(-10, 4, 4, flameH);
@@ -1347,13 +1357,26 @@ function drawRealVehicleSvg(vid, t) {
   ctx.fillRect(7, 4, 2, flameH*0.6);
   ctx.restore();
 
-  // 绘制真实拟真车体/机体
-  if(img && img.complete) {
-    ctx.drawImage(img, -28, -52, 56, 46);
+  // 绘制真实高清实拍照片车身/机身（带发光边框，完美贴合三轨道）
+  if(img && img.complete && img.naturalWidth > 0) {
+    ctx.save();
+    // 圆角裁剪贴图
+    ctx.beginPath();
+    ctx.roundRect(-24, -48, 48, 50, 8);
+    ctx.clip();
+    ctx.drawImage(img, -24, -48, 48, 50);
+    ctx.restore();
+    // 工业发光外轮廓
+    ctx.strokeStyle = isPlane ? 'rgba(74,222,128,.6)' : 'rgba(56,189,248,.6)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-24, -48, 48, 50, 8);
+    ctx.stroke();
   } else {
-    // 降级兜底
     ctx.fillStyle = '#38bdf8';
-    ctx.fillRect(-20, -42, 40, 44);
+    ctx.beginPath();
+    ctx.roundRect(-20, -42, 40, 44, 6);
+    ctx.fill();
   }
 }
 
@@ -1477,7 +1500,9 @@ let curMVehicleTab = 'all';
     const div = document.createElement('div');
     div.style.cssText = `background:rgba(255,255,255,.05); border-radius:12px; padding:10px 12px; margin:8px 0; display:flex; align-items:center; gap:10px; border:1px solid ${isDriving?'#38bdf8':'rgba(255,255,255,.1)'};`;
     div.innerHTML = `
-      <div style="width:54px; height:34px; flex:none;">${v.svg || ''}</div>
+      <div style="width:72px; height:46px; flex:none; border-radius:6px; overflow:hidden; background:#0f172a; border:1px solid rgba(255,255,255,.15);">
+  ${v.id === 'v_hiker' ? '<div style="font-size:28px; text-align:center; line-height:46px;">🥾</div>' : '<img src="assets/vehicles/' + v.id + '.jpg" alt="' + v.name + '" style="width:100%; height:100%; object-fit:cover; display:block;">'}
+</div>
       <div style="flex:1; min-width:0;">
         <div style="font-size:15px; font-weight:800; color:${v.color};">${v.name}</div>
         <div style="font-size:11px; color:#38bdf8; font-weight:700; margin-top:1px;">【${v.brand || '经典'} · ${v.cat || '原型'}】</div>

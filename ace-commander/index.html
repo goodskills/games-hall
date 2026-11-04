@@ -528,7 +528,7 @@ function renderHud() {
   
   // 基地载具展示
   const v = VEHICLES.find(x => x.id === S.activeVehicle) || VEHICLES[0];
-  $('mainVehicleSvgContainer').innerHTML = v.svg;
+  $('mainVehicleSvgContainer').innerHTML = '<img src="assets/vehicles/' + v.id + '.jpg" style="width:100%; height:100%; object-fit:cover;">';
   $('mainVehicleName').textContent = v.name;
   $('mainVehicleDesc').textContent = v.desc;
 }
@@ -754,7 +754,10 @@ function renderHangar() {
     const card = document.createElement('div');
     card.className = 'hangar-card' + (isActive ? ' active' : '');
     card.innerHTML = `
-      <div class="h-svg" style="width:78px; height:46px; margin:4px auto;">${v.svg}</div>
+      <div class="h-photo-wrap" style="width:100%; height:82px; border-radius:8px; overflow:hidden; background:#0f172a; border:1px solid rgba(255,255,255,.1); margin-bottom:6px; display:flex; align-items:center; justify-content:center;">
+  <img src="assets/vehicles/${v.id}.jpg" alt="${v.name}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+  <div style="display:none; font-size:36px;">${v.type==='car'?'🏎️':'✈️'}</div>
+</div>
       <div class="h-title" style="font-size:13px; font-weight:800; color:#f1f5f9;">${v.name}</div>
       <div style="font-size:11px; color:#38bdf8; margin:2px 0; font-weight:700;">【${v.brand} · ${v.cat}】</div>
       <div style="font-size:10px; color:#94a3b8; line-height:1.4; margin:2px 0;">${v.spec || v.desc || ''}</div>
