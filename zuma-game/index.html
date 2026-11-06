@@ -139,7 +139,7 @@
   <div class="ui">
     <div class="top-bar">
       <div class="stat">
-        <div class="pill">关卡 <span class="val" id="levelText">1</span>/8</div>
+        <div class="pill">关卡 <span class="val" id="levelText">1</span>/<span class="val" id="levelTotal">64</span></div>
         <div class="pill">分数 <span class="val" id="scoreText">0</span></div>
         <div class="pill">剩余 <span class="val" id="remainText">0</span></div>
       </div>
@@ -215,89 +215,98 @@ let aim = {x: 0, y: 0, active: false};
 let animFrame = null;
 let lastTime = 0;
 
-/* ==================== 关卡定义（8关） ====================
+/* ==================== 关卡定义（64关，程序化生成） ====================
+   8章 x 8关 = 64关，难度递增：颜色 3→7 色，球数 24→120，速度 1.0→2.5
    path: 路径控制点数组 [{x,y}, ...]，球从 path[0] 出发，向 path[end] 终点滚动
    colors: 可出现的颜色索引数组
    ballCount: 初始球串长度
    speedMultiplier: 速度系数
    spawnInterval: 新球生成间隔（帧），0 表示不自动生成（固定球串）
 */
-const LEVELS = [
-  {
-    name: '平原小路',
-    path: [
-      {x: 0.18, y: 0.50}, {x: 0.45, y: 0.50}, {x: 0.62, y: 0.62}, {x: 0.82, y: 0.62}, {x: 0.90, y: 0.50}, {x: 0.92, y: 0.30}
-    ],
-    colors: [0, 1, 2], ballCount: 24, speedMultiplier: 1.0, spawnInterval: 0
-  },
-  {
-    name: '森林弯道',
-    path: [
-      {x: 0.82, y: 0.50}, {x: 0.62, y: 0.50}, {x: 0.45, y: 0.68}, {x: 0.25, y: 0.68}, {x: 0.12, y: 0.50}, {x: 0.08, y: 0.30}
-    ],
-    colors: [0, 1, 2, 3], ballCount: 30, speedMultiplier: 1.1, spawnInterval: 0
-  },
-  {
-    name: '沙漠古道',
-    path: [
-      {x: 0.50, y: 0.15}, {x: 0.50, y: 0.42}, {x: 0.78, y: 0.42}, {x: 0.78, y: 0.75}, {x: 0.92, y: 0.75}, {x: 0.92, y: 0.85}
-    ],
-    colors: [0, 1, 2, 3], ballCount: 34, speedMultiplier: 1.2, spawnInterval: 0
-  },
-  {
-    name: '冰川裂缝',
-    path: [
-      {x: 0.10, y: 0.30}, {x: 0.40, y: 0.30}, {x: 0.60, y: 0.55}, {x: 0.35, y: 0.55}, {x: 0.35, y: 0.80}, {x: 0.12, y: 0.80}, {x: 0.05, y: 0.90}
-    ],
-    colors: [0, 1, 2, 3, 4], ballCount: 38, speedMultiplier: 1.3, spawnInterval: 0
-  },
-  {
-    name: '火山熔河',
-    path: [
-      {x: 0.90, y: 0.20}, {x: 0.55, y: 0.20}, {x: 0.30, y: 0.45}, {x: 0.55, y: 0.45}, {x: 0.80, y: 0.70}, {x: 0.80, y: 0.88}
-    ],
-    colors: [0, 1, 2, 3, 4], ballCount: 42, speedMultiplier: 1.4, spawnInterval: 0
-  },
-  {
-    name: '丛林迷宫',
-    path: [
-      {x: 0.05, y: 0.85}, {x: 0.30, y: 0.85}, {x: 0.30, y: 0.55}, {x: 0.70, y: 0.55}, {x: 0.70, y: 0.25}, {x: 0.95, y: 0.25}, {x: 0.95, y: 0.05}
-    ],
-    colors: [0, 1, 2, 3, 4], ballCount: 46, speedMultiplier: 1.5, spawnInterval: 0
-  },
-  {
-    name: '星空螺旋',
-    path: spiralPath(0.5, 0.5, 0.42, 5.5),
-    colors: [0, 1, 2, 3, 4, 5], ballCount: 52, speedMultiplier: 1.6, spawnInterval: 0
-  },
-  {
-    name: '祖玛终焉',
-    path: complexPath(),
-    colors: [0, 1, 2, 3, 4, 5, 6], ballCount: 60, speedMultiplier: 1.9, spawnInterval: 0
-  }
+const CHAPTERS = [
+  { name: '草原',    colorCount: 3 },
+  { name: '森林',    colorCount: 4 },
+  { name: '沙漠',    colorCount: 4 },
+  { name: '冰川',    colorCount: 5 },
+  { name: '火山',    colorCount: 5 },
+  { name: '丛林',    colorCount: 6 },
+  { name: '星空',    colorCount: 6 },
+  { name: '祖玛终焉', colorCount: 7 },
 ];
+
+// 路径生成器：type 0~7，返回控制点数组（归一化坐标 0~1）
+function pathByType(type, cx, cy) {
+  const p = [];
+  switch (type) {
+    case 0: // 直线斜坡
+      p.push({x: 0.10, y: 0.55}, {x: 0.55, y: 0.55}, {x: 0.88, y: 0.25}, {x: 0.93, y: 0.15});
+      break;
+    case 1: // L型
+      p.push({x: 0.10, y: 0.85}, {x: 0.50, y: 0.85}, {x: 0.50, y: 0.20}, {x: 0.90, y: 0.20}, {x: 0.93, y: 0.08});
+      break;
+    case 2: // Z型
+      p.push({x: 0.90, y: 0.50}, {x: 0.45, y: 0.50}, {x: 0.60, y: 0.20}, {x: 0.15, y: 0.20}, {x: 0.08, y: 0.08});
+      break;
+    case 3: // U型
+      p.push({x: 0.50, y: 0.15}, {x: 0.50, y: 0.55}, {x: 0.85, y: 0.55}, {x: 0.85, y: 0.88}, {x: 0.93, y: 0.88});
+      break;
+    case 4: // 螺旋
+      return spiralPath(cx, cy, 0.40, 4.5);
+    case 5: // 波浪折线
+      p.push({x: 0.08, y: 0.35}, {x: 0.28, y: 0.35}, {x: 0.28, y: 0.62}, {x: 0.52, y: 0.62},
+             {x: 0.52, y: 0.30}, {x: 0.75, y: 0.30}, {x: 0.75, y: 0.68}, {x: 0.93, y: 0.68});
+      break;
+    case 6: // 迷宫
+      p.push({x: 0.15, y: 0.45}, {x: 0.45, y: 0.45}, {x: 0.45, y: 0.18}, {x: 0.75, y: 0.18},
+             {x: 0.75, y: 0.55}, {x: 0.30, y: 0.55}, {x: 0.30, y: 0.82}, {x: 0.85, y: 0.82},
+             {x: 0.85, y: 0.92}, {x: 0.93, y: 0.92});
+      break;
+    case 7: // 复杂交叉
+      p.push({x: 0.08, y: 0.85}, {x: 0.35, y: 0.85}, {x: 0.35, y: 0.50}, {x: 0.70, y: 0.50},
+             {x: 0.70, y: 0.22}, {x: 0.92, y: 0.22}, {x: 0.92, y: 0.65}, {x: 0.45, y: 0.65},
+             {x: 0.45, y: 0.92}, {x: 0.93, y: 0.92});
+      break;
+  }
+  return p;
+}
 
 function spiralPath(cx, cy, r, turns) {
   const pts = [];
-  const segments = 60;
+  const segments = 70;
   for (let i = 0; i <= segments; i++) {
     const u = i / segments;
     const angle = u * turns * 2 * Math.PI;
-    const rad = r * (1 - u * 0.55);
+    const rad = r * (1 - u * 0.5);
     pts.push({x: cx + Math.cos(angle) * rad, y: cy + Math.sin(angle) * rad * 0.85});
   }
-  // 尾巴伸向外圈作为终点
-  pts.push({x: 0.90, y: 0.12});
+  pts.push({x: 0.92, y: 0.10});
   return pts;
 }
 
-function complexPath() {
-  return [
-    {x: 0.15, y: 0.45}, {x: 0.45, y: 0.45}, {x: 0.45, y: 0.20}, {x: 0.75, y: 0.20},
-    {x: 0.75, y: 0.55}, {x: 0.30, y: 0.55}, {x: 0.30, y: 0.80}, {x: 0.85, y: 0.80},
-    {x: 0.85, y: 0.92}, {x: 0.92, y: 0.92}, {x: 0.92, y: 0.05}
-  ];
-}
+// 生成全部64关
+const LEVELS = (() => {
+  const levels = [];
+  const total = 64;
+  for (let i = 0; i < total; i++) {
+    const chapter = Math.floor(i / 8);
+    const stage   = i % 8;
+    const ch = CHAPTERS[chapter];
+    const pathType = (chapter * 3 + stage) % 8;
+    const cx = 0.45 + (stage % 3 - 1) * 0.12;
+    const cy = 0.50 + Math.floor(stage / 3) * 0.10;
+    const path = pathByType(pathType, cx, cy);
+    const colorCount = Math.min(ch.colorCount + Math.floor(stage / 4), 7);
+    const colors = [];
+    for (let c = 0; c < colorCount; c++) colors.push(c);
+    const ballCount = Math.round(24 + (i / (total - 1)) * 96);
+    const speedMultiplier = 1.0 + (i / (total - 1)) * 1.5;
+    levels.push({
+      name: `${ch.name}·第 ${stage + 1} 阶`,
+      path, colors, ballCount, speedMultiplier, spawnInterval: 0
+    });
+  }
+  return levels;
+})();
 
 /* ==================== 工具函数 ==================== */
 function resize() {
@@ -315,7 +324,7 @@ function resize() {
     shooter.x = W / 2;
     shooter.y = H - 60;
   }
-  drawFrame();
+  if (levelData) drawFrame();
 }
 
 // 路径点按比例转换到画布像素
@@ -813,6 +822,7 @@ function drawHudCanvas() {
 }
 
 function drawFrame() {
+  if (!levelData) return;
   ctx.clearRect(0, 0, W, H);
   // 背景微光
   const bgGrad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W * 0.7);
@@ -830,6 +840,7 @@ function drawFrame() {
 
 function updateHud() {
   document.getElementById('levelText').textContent = levelIndex + 1;
+  document.getElementById('levelTotal').textContent = LEVELS.length;
   document.getElementById('scoreText').textContent = score;
   document.getElementById('remainText').textContent = chain.length;
 }
