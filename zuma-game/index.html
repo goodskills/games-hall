@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>祖玛小游戏 · 彩球消除闯关</title>
+<link rel="icon" href="data:,">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: radial-gradient(1000px 600px at 50% -10%, #2d3a5a 0%, #0f172a 55%, #070b16 100%);
+    color: #e8eefc;
+    padding: 12px;
+    overflow: hidden;
+  }
+  #game-wrap {
+    position: relative;
+    width: min(94vw, 520px);
+    aspect-ratio: 1 / 1;
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    touch-action: none;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .ui {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  }
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .stat {
+    display: flex;
+    gap: 10px;
+  }
+  .pill {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 14px;
+    padding: 4px 10px;
+    font-size: 13px;
+  }
+  .pill .val { color: #ffd76e; }
+  .aim-dot {
+    position: absolute;
+    width: 10px; height: 10px;
+    background: #ffd76e;
+    border-radius: 50%;
+    box-shadow: 0 0 12px #ffd76e, 0 0 20px rgba(255,215,110,0.6);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .aim-dot.visible { opacity: 1; }
+  .hud-center {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .hud-center.show { opacity: 1; }
+  .big-text { font-size: 42px; font-weight: 900; letter-spacing: 6px; color: #ffd76e; text-shadow: 0 0 24px rgba(255,215,110,0.5); margin-bottom: 6px; }
+  .small-text { font-size: 16px; color: #c7d2fe; }
+  .controls-hint {
+    position: absolute;
+    bottom: 10px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; color: #9db1d6; pointer-events: none; opacity: 0.8;
+  }
+  /* 覆盖层：开始/暂定/结算 */
+  .overlay {
+    position: absolute; inset: 0;
+    background: rgba(7, 11, 22, 0.85);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 40;
+    border-radius: 24px;
+  }
+  .overlay.hidden { display: none; }
+  .overlay h2 { font-size: 40px; margin-bottom: 10px; letter-spacing: 4px; color: #ffd76e; text-shadow: 0 0 20px rgba(255,215,110,0.4); }
+  .overlay p { color: #c7d2fe; margin-bottom: 22px; font-size: 15px; text-align: center; line-height: 1.6; }
+  .btn {
+    padding: 12px 26px; font-size: 16px; font-weight: 800; color: #0f172a;
+    background: linear-gradient(180deg, #ffd76e, #f59e0b);
+    border: none; border-radius: 12px; cursor: pointer; box-shadow: 0 6px 18px rgba(245,158,11,0.45);
+    transition: transform 0.1s, filter 0.1s;
+  }
+  .btn:active { transform: scale(0.96); filter: brightness(1.1); }
+  .btn.outline {
+    background: transparent; color: #ffd76e; border: 1.5px solid #ffd76e; box-shadow: none; margin-left: 14px;
+  }
+  .level-list {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; width: 260px;
+  }
+  .lv-btn {
+    padding: 8px 4px; font-size: 13px; font-weight: 700; border-radius: 8px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #c7d2fe; cursor: pointer;
+  }
+  .lv-btn.active { background: #ffd76e; color: #0f172a; border-color: #ffd76e; }
+  .lv-btn.locked { opacity: 0.5; cursor: not-allowed; }
+  .key-hint {
+    margin-top: 10px; font-size: 12px; color: #8fa3c8; text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-wrap">
+  <canvas id="gameCanvas"></canvas>
+  <div class="aim-dot" id="aimDot"></div>
+
+  <div class="ui">
+    <div class="top-bar">
+      <div class="stat">
+        <div class="pill">关卡 <span class="val" id="levelText">1</span>/8</div>
+        <div class="pill">分数 <span class="val" id="scoreText">0</span></div>
+        <div class="pill">剩余 <span class="val" id="remainText">0</span></div>
+      </div>
+      <div class="pill" id="statusText">准备中</div>
+    </div>
+    <div class="hud-center" id="hudCenter">
+      <div class="big-text" id="hudBig">准备</div>
+      <div class="small-text" id="hudSmall">点击屏幕发射彩球</div>
+    </div>
+    <div class="controls-hint">点击/触摸屏幕发射 · 消除 3 个及以上相同颜色连续球 · 阻止球到达终点</div>
+  </div>
+
+  <div class="overlay hidden" id="overlayStart">
+    <h2>🌀 祖玛消除</h2>
+    <p>用发射器击中同色球串，<br>连续 3 个及以上即可消除！<br>不要让任何彩球滚入终点洞穴。</p>
+    <button class="btn" onclick="startGame(1)">开始闯关</button>
+    <div class="level-list" id="levelList"></div>
+    <div class="key-hint">已解锁关卡显示高亮，点击即可挑战</div>
+  </div>
+
+  <div class="overlay hidden" id="overlayPause">
+    <h2>⏸ 暂停</h2>
+    <button class="btn" onclick="resumeGame()">继续游戏</button>
+    <button class="btn outline" onclick="backToStart()">返回主菜单</button>
+  </div>
+
+  <div class="overlay hidden" id="overlayWin">
+    <h2>🎉 关卡完成！</h2>
+    <p id="winMsg">所有彩球已消除</p>
+    <button class="btn" onclick="nextLevel()">下一关</button>
+    <button class="btn outline" onclick="backToStart()">返回主菜单</button>
+  </div>
+
+  <div class="overlay hidden" id="overlayLose">
+    <h2>💥 游戏失败</h2>
+    <p id="loseMsg">彩球滚入了终点洞穴</p>
+    <button class="btn" onclick="restartLevel()">重试本关</button>
+    <button class="btn outline" onclick="backToStart()">返回主菜单</button>
+  </div>
+</div>
+
+<script>
+/* ==================== 配置常量 ==================== */
+const COLORS = [
+  '#ef4444', // 红
+  '#f59e0b', // 橙
+  '#eab308', // 黄
+  '#22c55e', // 绿
+  '#3b82f6', // 蓝
+  '#a855f7', // 紫
+  '#ec4899', // 粉
+];
+const BALL_R = 13;           // 球半径
+const BALL_GAP = 26;         // 球中心间距
+const SHOOT_SPEED = 9;       // 发射球速度
+const CHAIN_SPEED_BASE = 1.2;// 球串基础速度（每帧像素）
+const FRICTION = 0.92;       // 插入后球串收紧摩擦
+const CANVAS_PAD = 40;       // 画布边距
+
+let W, H;
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+/* ==================== 状态 ==================== */
+let state = 'MENU'; // MENU, PLAYING, PAUSED, WIN, LOSE
+let levelIndex = 0;      // 0-based
+let score = 0;
+let unlockedLevel = 0;   // 0-based，已解锁最大关
+let levelData = null;
+let chain = [];          // 球串数组，每个元素 {t, color, r}
+let shooter = null;      // {x, y, angle, color, ball:{x,y,vx,vy,active,color}}
+let aim = {x: 0, y: 0, active: false};
+let animFrame = null;
+let lastTime = 0;
+
+/* ==================== 关卡定义（8关） ====================
+   path: 路径控制点数组 [{x,y}, ...]，球从 path[0] 出发，向 path[end] 终点滚动
+   colors: 可出现的颜色索引数组
+   ballCount: 初始球串长度
+   speedMultiplier: 速度系数
+   spawnInterval: 新球生成间隔（帧），0 表示不自动生成（固定球串）
+*/
+const LEVELS = [
+  {
+    name: '平原小路',
+    path: [
+      {x: 0.18, y: 0.50}, {x: 0.45, y: 0.50}, {x: 0.62, y: 0.62}, {x: 0.82, y: 0.62}, {x: 0.90, y: 0.50}, {x: 0.92, y: 0.30}
+    ],
+    colors: [0, 1, 2], ballCount: 24, speedMultiplier: 1.0, spawnInterval: 0
+  },
+  {
+    name: '森林弯道',
+    path: [
+      {x: 0.82, y: 0.50}, {x: 0.62, y: 0.50}, {x: 0.45, y: 0.68}, {x: 0.25, y: 0.68}, {x: 0.12, y: 0.50}, {x: 0.08, y: 0.30}
+    ],
+    colors: [0, 1, 2, 3], ballCount: 30, speedMultiplier: 1.1, spawnInterval: 0
+  },
+  {
+    name: '沙漠古道',
+    path: [
+      {x: 0.50, y: 0.15}, {x: 0.50, y: 0.42}, {x: 0.78, y: 0.42}, {x: 0.78, y: 0.75}, {x: 0.92, y: 0.75}, {x: 0.92, y: 0.85}
+    ],
+    colors: [0, 1, 2, 3], ballCount: 34, speedMultiplier: 1.2, spawnInterval: 0
+  },
+  {
+    name: '冰川裂缝',
+    path: [
+      {x: 0.10, y: 0.30}, {x: 0.40, y: 0.30}, {x: 0.60, y: 0.55}, {x: 0.35, y: 0.55}, {x: 0.35, y: 0.80}, {x: 0.12, y: 0.80}, {x: 0.05, y: 0.90}
+    ],
+    colors: [0, 1, 2, 3, 4], ballCount: 38, speedMultiplier: 1.3, spawnInterval: 0
+  },
+  {
+    name: '火山熔河',
+    path: [
+      {x: 0.90, y: 0.20}, {x: 0.55, y: 0.20}, {x: 0.30, y: 0.45}, {x: 0.55, y: 0.45}, {x: 0.80, y: 0.70}, {x: 0.80, y: 0.88}
+    ],
+    colors: [0, 1, 2, 3, 4], ballCount: 42, speedMultiplier: 1.4, spawnInterval: 0
+  },
+  {
+    name: '丛林迷宫',
+    path: [
+      {x: 0.05, y: 0.85}, {x: 0.30, y: 0.85}, {x: 0.30, y: 0.55}, {x: 0.70, y: 0.55}, {x: 0.70, y: 0.25}, {x: 0.95, y: 0.25}, {x: 0.95, y: 0.05}
+    ],
+    colors: [0, 1, 2, 3, 4], ballCount: 46, speedMultiplier: 1.5, spawnInterval: 0
+  },
+  {
+    name: '星空螺旋',
+    path: spiralPath(0.5, 0.5, 0.42, 5.5),
+    colors: [0, 1, 2, 3, 4, 5], ballCount: 52, speedMultiplier: 1.6, spawnInterval: 0
+  },
+  {
+    name: '祖玛终焉',
+    path: complexPath(),
+    colors: [0, 1, 2, 3, 4, 5, 6], ballCount: 60, speedMultiplier: 1.9, spawnInterval: 0
+  }
+];
+
+function spiralPath(cx, cy, r, turns) {
+  const pts = [];
+  const segments = 60;
+  for (let i = 0; i <= segments; i++) {
+    const u = i / segments;
+    const angle = u * turns * 2 * Math.PI;
+    const rad = r * (1 - u * 0.55);
+    pts.push({x: cx + Math.cos(angle) * rad, y: cy + Math.sin(angle) * rad * 0.85});
+  }
+  // 尾巴伸向外圈作为终点
+  pts.push({x: 0.90, y: 0.12});
+  return pts;
+}
+
+function complexPath() {
+  return [
+    {x: 0.15, y: 0.45}, {x: 0.45, y: 0.45}, {x: 0.45, y: 0.20}, {x: 0.75, y: 0.20},
+    {x: 0.75, y: 0.55}, {x: 0.30, y: 0.55}, {x: 0.30, y: 0.80}, {x: 0.85, y: 0.80},
+    {x: 0.85, y: 0.92}, {x: 0.92, y: 0.92}, {x: 0.92, y: 0.05}
+  ];
+}
+
+/* ==================== 工具函数 ==================== */
+function resize() {
+  const wrap = document.getElementById('game-wrap');
+  const rect = wrap.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const size = Math.min(rect.width, rect.height);
+  W = size; H = size;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.scale(1 / dpr, 1 / dpr); // 让逻辑坐标按 CSS 像素处理
+  // 重新放置发射器在画布下方居中
+  if (shooter) {
+    shooter.x = W / 2;
+    shooter.y = H - 60;
+  }
+  drawFrame();
+}
+
+// 路径点按比例转换到画布像素
+function pathPoint(p) {
+  return { x: p.x * W, y: p.y * H };
+}
+
+// 沿路径累积长度，用于 t -> 像素位置的映射
+function buildPathLengths(path) {
+  const len = [0];
+  let total = 0;
+  for (let i = 1; i < path.length; i++) {
+    const a = pathPoint(path[i - 1]);
+    const b = pathPoint(path[i]);
+    total += Math.hypot(b.x - a.x, b.y - a.y);
+    len.push(total);
+  }
+  return { lengths: len, total };
+}
+
+// t (0~1) -> 路径上的像素点
+function tToPoint(path, lengths, t) {
+  t = Math.max(0, Math.min(1, t));
+  const target = t * lengths.total;
+  // 二分找区间
+  let lo = 0, hi = lengths.lengths.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (lengths.lengths[mid] < target) lo = mid + 1; else hi = mid;
+  }
+  const seg = Math.max(0, Math.min(lo - 1, lengths.lengths.length - 2));
+  const segStart = lengths.lengths[seg];
+  const segEnd = lengths.lengths[seg + 1];
+  const u = segEnd === segStart ? 0 : (target - segStart) / (segEnd - segStart);
+  const a = pathPoint(path[seg]);
+  const b = pathPoint(path[seg + 1]);
+  return { x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u, seg };
+}
+
+// 方向向量（沿路径前进方向）在 t 处
+function tToDir(path, lengths, t) {
+  t = Math.max(0, Math.min(1, t));
+  const eps = 0.002;
+  const p1 = tToPoint(path, lengths, Math.max(0, t - eps));
+  const p2 = tToPoint(path, lengths, Math.min(1, t + eps));
+  const dx = p2.x - p1.x, dy = p2.y - p1.y;
+  const d = Math.hypot(dx, dy) || 1;
+  return { x: dx / d, y: dy / d };
+}
+
+/* ==================== 游戏核心 ==================== */
+function initLevel(idx) {
+  levelIndex = idx;
+  levelData = LEVELS[idx];
+  const { path } = levelData;
+  levelData._lengths = buildPathLengths(path);
+
+  // 初始球串：从终点往回推 ballCount 个球，间距 BALL_GAP
+  chain = [];
+  const total = levelData._lengths.total;
+  const endT = 1.0;
+  for (let i = 0; i < levelData.ballCount; i++) {
+    const t = Math.max(0, 1 - (i * BALL_GAP) / total);
+    const col = levelData.colors[Math.floor(Math.random() * levelData.colors.length)];
+    chain.push({ t, color: col, r: BALL_R });
+  }
+  // chain[0] 是领先球（最靠近终点）
+
+  // 发射器
+  shooter = {
+    x: W / 2, y: H - 60,
+    angle: -Math.PI / 2,
+    color: levelData.colors[Math.floor(Math.random() * levelData.colors.length)],
+    ball: null // {x,y,vx,vy,color,active}
+  };
+
+  score = 0;
+  updateHud();
+  aim.active = false;
+  document.getElementById('aimDot').classList.remove('visible');
+
+  setState('PLAYING');
+}
+
+function setState(s) {
+  state = s;
+  const st = document.getElementById('statusText');
+  const ov = (id) => document.getElementById(id);
+  ov('overlayStart').classList.add('hidden');
+  ov('overlayPause').classList.add('hidden');
+  ov('overlayWin').classList.add('hidden');
+  ov('overlayLose').classList.add('hidden');
+
+  if (s === 'PLAYING') {
+    st.textContent = '游戏中';
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  } else if (s === 'PAUSED') {
+    st.textContent = '已暂停';
+    ov('overlayPause').classList.remove('hidden');
+  } else if (s === 'WIN') {
+    st.textContent = '通关';
+    ov('overlayWin').classList.remove('hidden');
+    document.getElementById('winMsg').textContent = `第 ${levelIndex + 1} 关：${levelData.name} 已完成`;
+  } else if (s === 'LOSE') {
+    st.textContent = '失败';
+    ov('overlayLose').classList.remove('hidden');
+    document.getElementById('loseMsg').textContent = `第 ${levelIndex + 1} 关：${levelData.name} 被突破了`;
+  } else if (s === 'MENU') {
+    st.textContent = '主菜单';
+    ov('overlayStart').classList.remove('hidden');
+    renderLevelList();
+  }
+}
+
+function loop(now) {
+  if (state !== 'PLAYING') return;
+  const dt = Math.min((now - lastTime) / 16.67, 3); // 归一化到 ~60fps
+  lastTime = now;
+
+  update(dt);
+  drawFrame();
+  animFrame = requestAnimationFrame(loop);
+}
+
+function update(dt) {
+  const { path, speedMultiplier } = levelData;
+  const lengths = levelData._lengths;
+  const speed = CHAIN_SPEED_BASE * speedMultiplier;
+
+  // 1. 移动球串：领先球先走，后面球按间距跟随
+  if (chain.length > 0) {
+    chain[0].t += speed * dt / lengths.total;
+    // 终点判定
+    if (chain[0].t >= 1.0) {
+      setState('LOSE');
+      return;
+    }
+    // 后面球：保持与前面球的距离 BALL_GAP（沿路径弧长）
+    for (let i = 1; i < chain.length; i++) {
+      const prev = chain[i - 1];
+      const cur = chain[i];
+      // 当前球在路径上的弧长位置
+      const curPos = tToPoint(path, lengths, cur.t);
+      const prevPos = tToPoint(path, lengths, prev.t);
+      const d = Math.hypot(prevPos.x - curPos.x, prevPos.y - curPos.y);
+      if (d > BALL_GAP) {
+        // 需要向前追：沿路径前进
+        const dir = tToDir(path, lengths, cur.t);
+        const step = Math.min(d - BALL_GAP, speed * dt * 1.2);
+        cur.t += step / lengths.total;
+        if (cur.t > 1) cur.t = 1;
+      }
+    }
+  }
+
+  // 2. 移动发射出的球
+  if (shooter.ball && shooter.ball.active) {
+    const b = shooter.ball;
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+
+    // 撞墙反弹（画布边缘）
+    if (b.x - b.r < 0) { b.x = b.r; b.vx *= -1; }
+    if (b.x + b.r > W) { b.x = W - b.r; b.vx *= -1; }
+    if (b.y - b.r < 0) { b.y = b.r; b.vy *= -1; }
+    if (b.y + b.r > H) {
+      // 掉出底部则销毁
+      shooter.ball.active = false;
+      shooter.ball = null;
+    }
+
+    // 与球串碰撞
+    if (shooter.ball && shooter.ball.active) {
+      checkShotHit();
+    }
+  }
+
+  // 3. 插入后收紧：把间距过大的球往前压
+  tightenChain();
+
+  updateHud();
+}
+
+// 发射球与球串碰撞：找最近的球，插入
+function checkShotHit() {
+  const b = shooter.ball;
+  let hitIdx = -1;
+  let hitDist = Infinity;
+  let hitT = 0;
+  let hitSide = 0; // -1 插入到该球前面，1 插入到该球后面
+
+  for (let i = 0; i < chain.length; i++) {
+    const c = chain[i];
+    const p = tToPoint(levelData.path, levelData._lengths, c.t);
+    const d = Math.hypot(b.x - p.x, b.y - p.y);
+    const minD = b.r + c.r + 4; // 4 像素容差
+    if (d < minD && d < hitDist) {
+      hitDist = d;
+      hitIdx = i;
+      hitT = c.t;
+      // 判断发射球是在该球的前方还是后方（沿路径方向）
+      const dir = tToDir(levelData.path, levelData._lengths, c.t);
+      const toBall = { x: b.x - p.x, y: b.y - p.y };
+      const dot = toBall.x * dir.x + toBall.y * dir.y;
+      hitSide = dot > 0 ? 1 : -1;
+    }
+  }
+
+  if (hitIdx !== -1) {
+    insertShot(hitIdx, hitSide, b.color);
+    shooter.ball.active = false;
+    shooter.ball = null;
+    // 换下一颗发射球颜色
+    shooter.color = levelData.colors[Math.floor(Math.random() * levelData.colors.length)];
+  }
+}
+
+// 将发射的球插入球串
+function insertShot(idx, side, color) {
+  // 计算新球的 t：插入到被击球的前面或后面
+  let newT;
+  if (side > 0) {
+    // 插入到 hitIdx 后面（远离终点方向）
+    newT = Math.max(0, chain[idx].t - BALL_GAP / levelData._lengths.total);
+  } else {
+    // 插入到 hitIdx 前面（靠近终点方向）
+    newT = Math.min(1, chain[idx].t + BALL_GAP / levelData._lengths.total);
+  }
+  // 防止与相邻球重叠过度：向外调整
+  if (side > 0 && idx > 0) {
+    const gap = chain[idx].t - newT;
+    if (gap < BALL_GAP * 0.6 / levelData._lengths.total) newT = chain[idx].t - BALL_GAP * 0.6 / levelData._lengths.total;
+  }
+  if (side <= 0 && idx < chain.length - 1) {
+    const gap = newT - chain[idx + 1].t;
+    if (gap < BALL_GAP * 0.6 / levelData._lengths.total) newT = chain[idx + 1].t + BALL_GAP * 0.6 / levelData._lengths.total;
+  }
+
+  chain.splice(idx + (side > 0 ? 1 : 0), 0, { t: newT, color, r: BALL_R });
+
+  // 消除检测：从新球所在位置向两边扩散
+  const insertIndex = idx + (side > 0 ? 1 : 0);
+  resolveMatches(insertIndex);
+}
+
+// 消除与连锁
+function resolveMatches(startIndex) {
+  let changed = true;
+  let idx = startIndex;
+  while (changed && chain.length > 0) {
+    changed = false;
+    // 从 idx 所在球开始，向左右找同色连续段
+    const center = Math.max(0, Math.min(idx, chain.length - 1));
+    const color = chain[center].color;
+    let left = center;
+    while (left > 0 && chain[left - 1].color === color) left--;
+    let right = center;
+    while (right < chain.length - 1 && chain[right + 1].color === color) right++;
+    const count = right - left + 1;
+    if (count >= 3) {
+      // 加分
+      score += count * 10 + (count - 3) * 5;
+      // 删除这段
+      chain.splice(left, right - left + 1);
+      changed = true;
+      // 连锁：删除后，left-1 和 left（原 right+1）相邻，检查它们是否同色
+      idx = Math.max(0, left - 1);
+      if (idx >= chain.length) idx = chain.length - 1;
+      // 如果两端同色，下一次循环会再次从 idx 扩展检测
+    }
+  }
+  updateHud();
+  if (chain.length === 0) {
+    // 全部消除，胜利
+    setState('WIN');
+    // 解锁下一关
+    if (levelIndex + 1 < LEVELS.length && unlockedLevel < levelIndex + 1) {
+      unlockedLevel = levelIndex + 1;
+      saveProgress();
+    }
+    renderLevelList();
+  }
+}
+
+// 插入后收紧球串间距
+function tightenChain() {
+  if (chain.length <= 1) return;
+  const path = levelData.path;
+  const lengths = levelData._lengths;
+  // 从领先球开始，后面每个球尽量与前面保持 BALL_GAP
+  for (let i = 1; i < chain.length; i++) {
+    const prev = chain[i - 1];
+    const cur = chain[i];
+    const prevPos = tToPoint(path, lengths, prev.t);
+    const curPos = tToPoint(path, lengths, cur.t);
+    const d = Math.hypot(prevPos.x - curPos.x, prevPos.y - curPos.y);
+    if (d > BALL_GAP * 1.5) {
+      const dir = tToDir(path, lengths, cur.t);
+      const step = Math.min(d - BALL_GAP, 2.5);
+      cur.t += step / lengths.total;
+      if (cur.t > 1) cur.t = 1;
+    }
+  }
+  // 如果末尾球已经超出路径开始（t 过小），从数组移除（已经走出屏幕？实际上球只往终点走，t 越来越大，不会变小）
+  // 但插入新球可能导致某些球 t 变得很小（靠近起点），这是正常的，保留即可
+}
+
+/* ==================== 发射器控制 ==================== */
+function setAim(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  // 将客户端坐标转到画布逻辑坐标（考虑 dpr 已在 ctx 处理，这里直接用 CSS 像素相对位置）
+  const x = (clientX - rect.left) / rect.width * W;
+  const y = (clientY - rect.top) / rect.height * H;
+  const dx = x - shooter.x;
+  const dy = y - shooter.y;
+  let angle = Math.atan2(dy, dx);
+  // 限制发射角度在上方半圆（-PI/2 ± 80 度），避免向下发射
+  const minAngle = -Math.PI / 2 - 1.0;
+  const maxAngle = -Math.PI / 2 + 1.0;
+  if (angle < minAngle) angle = minAngle;
+  if (angle > maxAngle) angle = maxAngle;
+  shooter.angle = angle;
+
+  aim.x = shooter.x + Math.cos(angle) * 70;
+  aim.y = shooter.y + Math.sin(angle) * 70;
+  aim.active = true;
+  const dot = document.getElementById('aimDot');
+  dot.style.left = aim.x + 'px';
+  dot.style.top = aim.y + 'px';
+  dot.classList.add('visible');
+}
+
+function shoot() {
+  if (state !== 'PLAYING' || shooter.ball) return;
+  const b = {
+    x: shooter.x, y: shooter.y,
+    vx: Math.cos(shooter.angle) * SHOOT_SPEED,
+    vy: Math.sin(shooter.angle) * SHOOT_SPEED,
+    r: BALL_R,
+    color: shooter.color,
+    active: true
+  };
+  shooter.ball = b;
+}
+
+// 触摸/鼠标
+canvas.addEventListener('pointermove', (e) => {
+  if (state === 'PLAYING') setAim(e.clientX, e.clientY);
+});
+canvas.addEventListener('pointerdown', (e) => {
+  if (state === 'PLAYING') shoot();
+});
+// 键盘：空格发射，方向键调整角度（PC 友好）
+window.addEventListener('keydown', (e) => {
+  if (state !== 'PLAYING') return;
+  if (e.code === 'Space') { e.preventDefault(); shoot(); }
+  if (e.code === 'ArrowLeft')  { shooter.angle -= 0.12; if (shooter.angle < -Math.PI/2-1.0) shooter.angle = -Math.PI/2-1.0; aim.active=false; }
+  if (e.code === 'ArrowRight') { shooter.angle += 0.12; if (shooter.angle > -Math.PI/2+1.0) shooter.angle = -Math.PI/2+1.0; aim.active=false; }
+});
+
+function resumeGame() { setState('PLAYING'); lastTime = performance.now(); requestAnimationFrame(loop); }
+function backToStart() { setState('MENU'); }
+function startGame(lv) {
+  if (lv > unlockedLevel + 1) return;
+  initLevel(lv - 1);
+}
+function nextLevel() {
+  if (levelIndex + 1 >= LEVELS.length) {
+    backToStart();
+    return;
+  }
+  startGame(levelIndex + 2); // 1-based
+}
+function restartLevel() { startGame(levelIndex + 1); }
+
+/* ==================== 进度持久化 ==================== */
+function saveProgress() {
+  try { localStorage.setItem('zuma_unlocked', String(unlockedLevel)); } catch (e) {}
+}
+function loadProgress() {
+  try {
+    const v = localStorage.getItem('zuma_unlocked');
+    if (v !== null) unlockedLevel = Math.min(parseInt(v, 10) || 0, LEVELS.length - 1);
+  } catch (e) {}
+}
+
+/* ==================== 渲染 ==================== */
+function drawBall(x, y, r, color, glow = false) {
+  ctx.save();
+  ctx.translate(x, y);
+  if (glow) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 14;
+  }
+  // 外壳
+  const grad = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.2, 0, 0, r);
+  grad.addColorStop(0, '#ffffff');
+  grad.addColorStop(0.35, color);
+  grad.addColorStop(1, shadeColor(color, -0.5));
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  // 高光
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.beginPath();
+  ctx.arc(-r * 0.4, -r * 0.4, r * 0.35, 0, Math.PI * 2);
+  ctx.fill();
+  // 边框
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function shadeColor(color, percent) {
+  const f = parseInt(color.slice(1), 16), t = percent < 0 ? 0 : 255, p = percent < 0 ? -percent : percent;
+  const R = f >> 16, G = (f >> 8) & 0x00FF, B = f & 0x00FF;
+  const toHex = (v) => v.toString(16).padStart(2, '0');
+  const calc = (c) => Math.round((t - c) * p + c);
+  return '#' + toHex(calc(R)) + toHex(calc(G)) + toHex(calc(B));
+}
+
+function drawPathPreview(path) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
+  ctx.lineWidth = BALL_GAP + 4;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  const first = pathPoint(path[0]);
+  ctx.moveTo(first.x, first.y);
+  for (let i = 1; i < path.length; i++) {
+    const p = pathPoint(path[i]);
+    ctx.lineTo(p.x, p.y);
+  }
+  ctx.stroke();
+  // 终点洞穴
+  const end = pathPoint(path[path.length - 1]);
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.beginPath();
+  ctx.arc(end.x, end.y, BALL_R + 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawShooter() {
+  ctx.save();
+  ctx.translate(shooter.x, shooter.y);
+  ctx.rotate(shooter.angle);
+  // 发射器底座
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(-18, 0, 36, 34);
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-18, 0, 36, 34);
+  // 当前球
+  drawBall(0, 14, BALL_R, shooter.color, true);
+  // 发射方向线
+  ctx.strokeStyle = 'rgba(255,215,110,0.45)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 14);
+  ctx.lineTo(Math.cos(shooter.angle) * 60, 14 + Math.sin(shooter.angle) * 60);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawShot() {
+  if (!shooter.ball || !shooter.ball.active) return;
+  const b = shooter.ball;
+  drawBall(b.x, b.y, b.r, b.color, true);
+}
+
+function drawChain() {
+  const path = levelData.path;
+  const lengths = levelData._lengths;
+  // 从后往前画，让前面的球盖住后面
+  for (let i = chain.length - 1; i >= 0; i--) {
+    const c = chain[i];
+    const p = tToPoint(path, lengths, c.t);
+    // 只画画布内的
+    if (p.x < -50 || p.x > W + 50 || p.y < -50 || p.y > H + 50) continue;
+    const glowing = (i === 0); // 领先球发光
+    drawBall(p.x, p.y, c.r, c.color, glowing);
+  }
+}
+
+function drawHudCanvas() {
+  // 画布内无额外 HUD，全部用 DOM。此处保留以备扩展
+}
+
+function drawFrame() {
+  ctx.clearRect(0, 0, W, H);
+  // 背景微光
+  const bgGrad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W * 0.7);
+  bgGrad.addColorStop(0, 'rgba(30, 50, 90, 0.45)');
+  bgGrad.addColorStop(1, 'rgba(7, 11, 22, 0)');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  drawPathPreview(levelData.path);
+  drawChain();
+  drawShot();
+  drawShooter();
+  drawHudCanvas();
+}
+
+function updateHud() {
+  document.getElementById('levelText').textContent = levelIndex + 1;
+  document.getElementById('scoreText').textContent = score;
+  document.getElementById('remainText').textContent = chain.length;
+}
+
+/* ==================== 主菜单关卡列表 ==================== */
+function renderLevelList() {
+  const list = document.getElementById('levelList');
+  list.innerHTML = '';
+  LEVELS.forEach((lv, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'lv-btn' + (i <= unlockedLevel ? '' : ' locked') + (i === levelIndex && state === 'MENU' ? ' active' : '');
+    btn.textContent = `第 ${i + 1} 关`;
+    btn.title = lv.name;
+    if (i <= unlockedLevel) {
+      btn.onclick = () => startGame(i + 1);
+    }
+    list.appendChild(btn);
+  });
+  // 高亮当前选中（若在菜单）
+  if (state === 'MENU') {
+    const btns = list.querySelectorAll('.lv-btn');
+    if (btns[levelIndex]) btns[levelIndex].classList.add('active');
+  }
+}
+
+/* ==================== 入口 ==================== */
+window.addEventListener('resize', resize);
+window.addEventListener('load', () => {
+  resize();
+  loadProgress();
+  renderLevelList();
+  setState('MENU');
+});
+</script>
+</body>
+</html>
