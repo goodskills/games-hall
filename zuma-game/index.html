@@ -1622,7 +1622,7 @@ function drawShot() {
   drawBall(b.x, b.y, b.r, b.color, true);
 }
 
-function drawChain() {
+function drawChain(t) {
   const path = levelData.path;
   const lengths = levelData._lengths;
   // 从后往前画，让前面的球盖住后面
@@ -1831,7 +1831,8 @@ function drawHudCanvas() {
 
 function drawFrame() {
   if (!levelData) return;
-  const now = performance.now() / 1000;
+  const t = performance.now() / 1000;   // 全帧统一时间变量（背景/道具/蛙眼脉动共用）
+  const now = t;
   ctx.clearRect(0, 0, W, H);
 
   // 丛林神庙背景（多层视差 + 火把光晕 + 暗角）
@@ -1839,7 +1840,7 @@ function drawFrame() {
   drawBackground(now);
 
   drawPathPreview(levelData.path);
-  drawChain();
+  drawChain(t);
   // ❄️ 冰冻状态：全屏冰蓝覆盖 + 球串冰晶感
   if (freezeT > 0) {
     ctx.fillStyle = 'rgba(125,211,252,0.16)';
