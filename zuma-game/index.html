@@ -413,10 +413,21 @@ function initLevel(idx) {
   const total = levelData._lengths.total;
   // 领先球初始位置：球串末端刚好贴住入口，给玩家整条路径长度的反应时间
   const headT = Math.min(0.32, (levelData.ballCount * BALL_GAP) / total);
+  // 道具系统：第 5 关(levelIndex>=4)起随机埋道具球，关卡越深越多
+  const powerTypes = ['bomb', 'lightning', 'freeze', 'rewind'];
+  const pwCount = levelIndex >= 4 ? Math.min(4, 2 + Math.floor((levelIndex - 4) / 8)) : 0;
+  const pwSlots = new Set();
+  let guard = 0;
+  while (pwSlots.size < pwCount && guard++ < 60) {
+    const pos = 6 + Math.floor(Math.random() * (levelData.ballCount - 10));
+    pwSlots.add(pos); // 避开入口前几球，埋在中后段
+  }
   for (let i = 0; i < levelData.ballCount; i++) {
     const t = Math.max(0, headT - (i * BALL_GAP) / total);
     const col = levelData.colors[Math.floor(Math.random() * levelData.colors.length)];
-    chain.push({ t, color: col, r: BALL_R });
+    const ball = { t, color: col, r: BALL_R };
+    if (pwSlots.has(i)) ball.power = powerTypes[Math.floor(Math.random() * powerTypes.length)];
+    chain.push(ball);
   }
 
   // 发射器
@@ -428,6 +439,8 @@ function initLevel(idx) {
   };
 
   score = 0;
+  freezeT = 0;
+  queueTrigger = [];
   aim.active = false;
   document.getElementById('aimDot').classList.remove('visible');
   const hint = document.getElementById('controlsHint');
@@ -486,6 +499,11 @@ function update(dt) {
 
   // 1. 移动球串：领先球先走，后面球按间距跟随
   if (chain.length > 0) {
+    if (freezeT > 0) {
+      freezeT -= dt; // ❄️ 冰冻中：球链完全停止，但仍发射与消除
+      updateHud();
+      return;
+    }
     chain[0].t += speed * dt / lengths.total;
     // 终点判定
     if (chain[0].t >= 1.0) {
@@ -573,6 +591,20 @@ function checkShotHit() {
     const hitPos = tToPoint(levelData.path, levelData._lengths, hitT);
     spawnBurst(hitPos.x, hitPos.y, b.color, 8, 0.85);
     playSfx('hit');
+
+    // 🎯 命中道具球：触发效果（不插入）
+    if (chain[hitIdx].power) {
+      const pw = chain[hitIdx].power;
+      chain.splice(hitIdx, 1);
+      shooter.ball.active = false;
+      shooter.ball = null;
+      queueTrigger.push({ idx: hitIdx, type: pw });
+      processTriggerQueue();
+      shooter.color = levelData.colors[Math.floor(Math.random() * levelData.colors.length)];
+      updateHud();
+      return;
+    }
+
     insertShot(hitIdx, hitSide, b.color);
     shooter.ball.active = false;
     shooter.ball = null;
@@ -633,6 +665,13 @@ function resolveMatches(startIndex) {
       const midBall = chain[Math.min(midIdx, chain.length - 1)];
       const midPos = tToPoint(path, lengths, midBall.t);
 
+      // 🎁 消除组内的道具球 → 收集进触发队列（组消除后依次引爆）
+      for (let k = left; k <= right; k++) {
+        if (chain[k] && chain[k].power && k !== midIdx) {
+          queueTrigger.push({ idx: k, type: chain[k].power, removeOnly: true });
+        }
+      }
+
       // 加分（连锁层数越高，倍率越大）
       chainDepth++;
       const baseScore = count * 10 + (count - 3) * 5;
@@ -674,6 +713,8 @@ function resolveMatches(startIndex) {
     }
   }
   updateHud();
+  // 处理道具触发队列（可能连锁引爆更多道具）
+  if (queueTrigger.length) processTriggerQueue();
   if (chain.length === 0) {
     // 全部消除，胜利
     playSfx('win');
@@ -1570,8 +1611,197 @@ function drawChain() {
     // 只画画布内的
     if (p.x < -50 || p.x > W + 50 || p.y < -50 || p.y > H + 50) continue;
     const glowing = (i === 0); // 领先球发光
-    drawBall(p.x, p.y, c.r, c.color, glowing);
+    drawBall(p.x, p.y, c.r, c.color, glowing || !!c.power);
+    if (c.power) drawPowerupIcon(p.x, p.y, c.r, c.power, t);
   }
+}
+
+/* ==================== 道具球图案（覆盖在弹珠上） ==================== */
+const POWERUP_META = {
+  bomb:     { name: '炸弹',  icon: '💣', color: '#1f2937', tip: '炸掉周围一圈球' },
+  lightning:{ name: '闪电',  icon: '⚡', color: '#facc15', tip: '电清前方一段球' },
+  freeze:   { name: '冰冻',  icon: '❄️', color: '#7dd3fc', tip: '球串冰冻5秒' },
+  rewind:   { name: '回退',  icon: '⏪', color: '#4ade80', tip: '球链后退一大段' },
+};
+
+function drawPowerupIcon(x, y, r, type, t) {
+  ctx.save();
+  ctx.translate(x, y);
+  // 脉动光环提示这是道具球
+  const pulse = 0.55 + Math.sin(t * 5) * 0.25;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.82, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,' + (pulse * 0.8) + ')';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  if (type === 'bomb') {
+    // 黑色炸弹体 + 火花引信
+    ctx.fillStyle = '#111827';
+    ctx.beginPath(); ctx.arc(0, r * 0.12, r * 0.42, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(r * 0.05, -r * 0.22); ctx.quadraticCurveTo(r * 0.22, -r * 0.42, r * 0.10, -r * 0.55); ctx.stroke();
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath(); ctx.arc(r * 0.10, -r * 0.56, r * 0.12 + Math.sin(t * 12) * r * 0.03, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    ctx.beginPath(); ctx.arc(-r * 0.14, r * 0.02, r * 0.10, 0, Math.PI * 2); ctx.fill();
+  } else if (type === 'lightning') {
+    // 金色闪电折线
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.moveTo(r * 0.14, -r * 0.58);
+    ctx.lineTo(-r * 0.16, r * 0.02);
+    ctx.lineTo(r * 0.02, r * 0.02);
+    ctx.lineTo(-r * 0.14, r * 0.58);
+    ctx.lineTo(r * 0.22, -r * 0.10);
+    ctx.lineTo(r * 0.02, -r * 0.10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#fff7c2'; ctx.lineWidth = 1.2; ctx.stroke();
+  } else if (type === 'freeze') {
+    // 雪花：三轴交叉
+    ctx.strokeStyle = '#e0f2fe'; ctx.lineWidth = 2;
+    for (let k = 0; k < 3; k++) {
+      const a = k * Math.PI / 3 + t * 0.4;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5);
+      ctx.lineTo(-Math.cos(a) * r * 0.5, -Math.sin(a) * r * 0.5);
+      ctx.stroke();
+      // 枝杈
+      [-1, 1].forEach(sd => {
+        const ex = Math.cos(a) * r * 0.5 * sd, ey = Math.sin(a) * r * 0.5 * sd;
+        ctx.beginPath();
+        ctx.moveTo(ex, ey);
+        ctx.lineTo(ex + Math.cos(a + 0.6) * r * 0.18 * sd, ey + Math.sin(a + 0.6) * r * 0.18 * sd);
+        ctx.moveTo(ex, ey);
+        ctx.lineTo(ex + Math.cos(a - 0.6) * r * 0.18 * sd, ey + Math.sin(a - 0.6) * r * 0.18 * sd);
+        ctx.stroke();
+      });
+    }
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.12, 0, Math.PI * 2); ctx.fill();
+  } else if (type === 'rewind') {
+    // 双左箭头（绿色）
+    ctx.fillStyle = '#14532d';
+    [-r * 0.16, r * 0.22].forEach(ox => {
+      ctx.beginPath();
+      ctx.moveTo(ox, -r * 0.30);
+      ctx.lineTo(ox - r * 0.30, 0);
+      ctx.lineTo(ox, r * 0.30);
+      ctx.closePath();
+      ctx.fill();
+    });
+    ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1.4;
+    [-r * 0.16, r * 0.22].forEach(ox => {
+      ctx.beginPath();
+      ctx.moveTo(ox, -r * 0.30);
+      ctx.lineTo(ox - r * 0.30, 0);
+      ctx.lineTo(ox, r * 0.30);
+      ctx.stroke();
+    });
+  }
+  ctx.restore();
+}
+
+/* ==================== 道具触发效果 ==================== */
+let freezeT = 0; // 冰冻剩余帧数
+let queueTrigger = []; // 道具触发队列（支持连锁引爆）
+
+function processTriggerQueue() {
+  let guard = 0;
+  while (queueTrigger.length && guard++ < 12) {
+    const job = queueTrigger.shift();
+    // 索引在之前的消除中可能已偏移，收紧到合法范围
+    if (!chain.length) break;
+    const idx = Math.max(0, Math.min(job.idx, chain.length - 1));
+    // removeOnly：该道具球已随组消除，只需入队时已记下类型——直接触发相邻效果
+    if (job.removeOnly && chain[idx] && chain[idx].power === job.type) {
+      // 道具球还在链上（未被组消除覆盖到），从触发点引爆
+    }
+    if (!job.removeOnly && chain[idx] && chain[idx].power === job.type) {
+      chain.splice(idx, 1);
+    }
+    triggerPowerup(idx, job.type);
+    updateHud();
+  }
+  queueTrigger = [];
+}
+
+function triggerPowerup(idx, type) {
+  const path = levelData.path;
+  const lengths = levelData._lengths;
+  const meta = POWERUP_META[type];
+
+  if (type === 'bomb') {
+    // 炸弹：消除命中点前后各4球（无视颜色），带屏幕震动
+    const from = Math.max(0, idx - 4);
+    const to = Math.min(chain.length - 1, idx + 4);
+    for (let k = to; k >= from; k--) {
+      const b = chain[k];
+      const pos = tToPoint(path, lengths, b.t);
+      spawnBurst(pos.x, pos.y, b.color, 10, 1.3);
+      if (b.power && k !== idx) queueTrigger.push({ idx: k, type: b.power });
+    }
+    chain.splice(from, to - from + 1);
+    shake = 14;
+    spawnFloatText(midPointX(path, lengths, from), 0, '', '#fff'); // 占位避免空引用
+    spawnFloatText(sxOf(from), syOf(from) - 24, '💣 爆炸！', '#f97316', 24);
+    playSfx('crash');
+    tightenChain();
+  } else if (type === 'lightning') {
+    // 闪电：电清命中点向前（朝洞口方向）5球
+    const from = idx;
+    const to = Math.min(chain.length - 1, idx + 5);
+    for (let k = to; k >= from; k--) {
+      const b = chain[k];
+      const pos = tToPoint(path, lengths, b.t);
+      spawnBurst(pos.x, pos.y, '#fde047', 12, 1.2);
+      if (b.power && k !== idx) queueTrigger.push({ idx: k, type: b.power });
+      // 电光折线粒子
+      if (k > from) {
+        const prev = chain[k - 1] || chain[k];
+        const pPrev = tToPoint(path, lengths, prev.t);
+        particles.push({ x: (pPrev.x + pos.x) / 2, y: (pPrev.y + pos.y) / 2, vx: 0, vy: 0,
+          life: 0.8, decay: 0.05, size: 6, color: '#fde047', spark: true, flash: true });
+      }
+    }
+    chain.splice(from, to - from + 1);
+    playSfx('combo');
+    tightenChain();
+  } else if (type === 'freeze') {
+    // 冰冻：球链停止 5 秒
+    freezeT = 300;
+    chain.forEach(b => {
+      const pos = tToPoint(path, lengths, b.t);
+      spawnBurst(pos.x, pos.y, '#7dd3fc', 4, 0.5);
+    });
+    spawnFloatText(sxOf(idx), syOf(idx) - 24, '❄️ 冰冻 5 秒！', '#7dd3fc', 22);
+    playSfx('win');
+  } else if (type === 'rewind') {
+    // 回退：整条球链后退 12% 路径
+    chain.forEach(b => {
+      b.t = Math.max(0, b.t - 0.12);
+      const pos = tToPoint(path, lengths, b.t);
+      spawnBurst(pos.x, pos.y, '#4ade80', 3, 0.4);
+    });
+    spawnFloatText(sxOf(idx), syOf(idx) - 24, '⏪ 球链回退！', '#4ade80', 22);
+    playSfx('pop');
+  }
+}
+
+// 辅助：道具触发提示文字的坐标（用索引取位置，越界自动收拢到链尾）
+function sxOf(idx) {
+  const i = Math.max(0, Math.min(idx, chain.length - 1));
+  if (!chain.length) return W / 2;
+  return tToPoint(levelData.path, levelData._lengths, chain[i].t).x;
+}
+function syOf(idx) {
+  const i = Math.max(0, Math.min(idx, chain.length - 1));
+  if (!chain.length) return H / 2;
+  return tToPoint(levelData.path, levelData._lengths, chain[i].t).y;
+}
+function midPointX(path, lengths, from) {
+  return 0;
 }
 
 function drawHudCanvas() {
@@ -1589,6 +1819,19 @@ function drawFrame() {
 
   drawPathPreview(levelData.path);
   drawChain();
+  // ❄️ 冰冻状态：全屏冰蓝覆盖 + 球串冰晶感
+  if (freezeT > 0) {
+    ctx.fillStyle = 'rgba(125,211,252,0.16)';
+    ctx.fillRect(0, 0, W, H);
+    const frost = ctx.createRadialGradient(W/2, H/2, W*0.1, W/2, H/2, W*0.6);
+    frost.addColorStop(0, 'rgba(224,242,254,0.10)');
+    frost.addColorStop(1, 'rgba(125,211,252,0.22)');
+    ctx.fillStyle = frost;
+    ctx.fillRect(0, 0, W, H);
+    ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#e0f2fe';
+    ctx.fillText('❄️ 冰冻 ' + Math.ceil(freezeT / 60) + 's', W / 2, 30);
+  }
   drawShot();
   drawFrogShooter(shooter.x, shooter.y, shooter.angle, shooter.color, BALL_R);
   drawEffects();   // 粒子与飘字（最上层，覆盖所有元素）
