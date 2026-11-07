@@ -201,13 +201,13 @@
 <script>
 /* ==================== 配置常量 ==================== */
 const COLORS = [
-  '#ef4444', // 红
-  '#f59e0b', // 橙
-  '#eab308', // 黄
-  '#22c55e', // 绿
-  '#3b82f6', // 蓝
-  '#a855f7', // 紫
-  '#ec4899', // 粉
+  '#e8323c', // 红
+  '#fdd028', // 黄（柠檬明黄，与红橙彻底拉开）
+  '#3fd44f', // 绿（亮翠绿）
+  '#2f6df6', // 蓝
+  '#9d3bf0', // 紫
+  '#f2f6f5', // 白（全色系里区分度最高）
+  '#14c8c8', // 青（与蓝紫拉开）
 ];
 const BALL_R = 10;           // 球半径
 const BALL_GAP = 20;         // 球中心间距
@@ -1610,7 +1610,7 @@ function updateHud() {
 }
 
 function colorName(hex) {
-  const names = ['红', '橙', '黄', '绿', '蓝', '紫', '粉'];
+  const names = ['红', '黄', '绿', '蓝', '紫', '白', '青'];
   const idx = COLORS.indexOf(hex);
   return idx >= 0 ? names[idx] : '?';
 }
