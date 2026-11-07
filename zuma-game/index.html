@@ -120,8 +120,10 @@
     border-radius: 24px;
   }
   .overlay.hidden { display: none; }
-  .overlay h2 { font-size: 40px; margin-bottom: 10px; letter-spacing: 4px; color: #ffd76e; text-shadow: 0 0 20px rgba(255,215,110,0.4); }
-  .overlay p { color: #c7d2fe; margin-bottom: 22px; font-size: 15px; text-align: center; line-height: 1.6; }
+  /* 主菜单专属：手机小屏可滚动，头尾全部可见 */
+  #overlayStart { justify-content: flex-start; overflow-y: auto; padding: 22px 10px 26px; }
+  .overlay h2 { font-size: clamp(26px, 7vw, 40px); margin-bottom: 8px; letter-spacing: 4px; color: #ffd76e; text-shadow: 0 0 20px rgba(255,215,110,0.4); }
+  .overlay p { color: #c7d2fe; margin-bottom: 14px; font-size: 13px; text-align: center; line-height: 1.55; }
   .btn {
     padding: 12px 26px; font-size: 16px; font-weight: 800; color: #0f172a;
     background: linear-gradient(180deg, #ffd76e, #f59e0b);
@@ -133,10 +135,11 @@
     background: transparent; color: #ffd76e; border: 1.5px solid #ffd76e; box-shadow: none; margin-left: 14px;
   }
   .level-list {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; width: 260px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; width: min(100%, 300px);
+    flex-shrink: 0; /* 关键：阻止 flex 压缩网格盒，溢出部分计入滚动高度 */
   }
   .lv-btn {
-    padding: 8px 4px; font-size: 13px; font-weight: 700; border-radius: 8px;
+    padding: 7px 3px; font-size: 12px; font-weight: 700; border-radius: 8px;
     background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #c7d2fe; cursor: pointer;
   }
   .lv-btn.active { background: #ffd76e; color: #0f172a; border-color: #ffd76e; }
@@ -174,7 +177,7 @@
     <p>用发射器击中同色球串，<br>连续 3 个及以上即可消除！<br>不要让任何彩球滚入终点洞穴。</p>
     <button class="btn" onclick="startGame(1)">开始闯关</button>
     <div class="level-list" id="levelList"></div>
-    <div class="key-hint">已解锁关卡显示高亮，点击即可挑战</div>
+    <div class="key-hint" style="font-size:11px; margin-top:10px;">已解锁关卡显示高亮，点击即可挑战</div>
   </div>
 
   <div class="overlay hidden" id="overlayPause">
