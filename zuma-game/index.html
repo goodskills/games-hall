@@ -600,7 +600,8 @@ function checkShotHit() {
       shooter.ball = null;
       queueTrigger.push({ idx: hitIdx, type: pw });
       processTriggerQueue();
-      shooter.color = levelData.colors[Math.floor(Math.random() * levelData.colors.length)];
+      // 防死局：从链上现存颜色换弹
+      shooter.color = pickLivingColor();
       updateHud();
       return;
     }
@@ -608,8 +609,8 @@ function checkShotHit() {
     insertShot(hitIdx, hitSide, b.color);
     shooter.ball.active = false;
     shooter.ball = null;
-    // 换下一颗发射球颜色
-    shooter.color = levelData.colors[Math.floor(Math.random() * levelData.colors.length)];
+    // 换下一颗发射球颜色（只从链上现存颜色中选，防死局）
+    shooter.color = pickLivingColor();
     updateHud();
   }
 }
@@ -711,6 +712,11 @@ function resolveMatches(startIndex) {
       if (idx >= chain.length) idx = chain.length - 1;
       // 如果两端同色，下一次循环会再次从 idx 扩展检测
     }
+  }
+  // 防死局：手球颜色若已在链上清光，自动换成现存颜色
+  if (chain.length && !livingColors().includes(shooter.color)) {
+    shooter.color = pickLivingColor();
+    updateHud();
   }
   updateHud();
   // 处理道具触发队列（可能连锁引爆更多道具）
@@ -1272,6 +1278,21 @@ function tracePath(path) {
     const p = pathPoint(path[i]);
     ctx.lineTo(p.x, p.y);
   }
+}
+
+/* ==================== 防死局：手球颜色只从链上现存颜色生成 ====================
+   某颜色在球链上被清光后，射手不再生成该颜色；
+   若当前手球恰好是已消失颜色，自动换成现存颜色。
+   （链上仅剩 1-2 颗同色时也能凑成三连，永不卡关）
+===================================================================== */
+function livingColors() {
+  return [...new Set(chain.map(b => b.color))];
+}
+
+function pickLivingColor() {
+  const lc = livingColors();
+  if (!lc.length) return Math.floor(Math.random() * levelData.colors.length);
+  return lc[Math.floor(Math.random() * lc.length)];
 }
 
 /* ==================== 特效系统：粒子爆炸 + Combo 飘字 ==================== */
@@ -1847,15 +1868,15 @@ function updateHud() {
   const dot = document.getElementById('nextColorDot');
   const txt = document.getElementById('nextColor');
   if (shooter && dot) {
-    dot.style.backgroundColor = shooter.color;
+    dot.style.backgroundColor = (typeof shooter.color === 'number') ? COLORS[shooter.color] : shooter.color;
     txt.textContent = colorName(shooter.color);
   }
 }
 
 function colorName(hex) {
   const names = ['红', '黄', '绿', '蓝', '紫', '白', '青'];
-  const idx = COLORS.indexOf(hex);
-  return idx >= 0 ? names[idx] : '?';
+  const idx = (typeof hex === 'number') ? hex : COLORS.indexOf(hex);
+  return (idx >= 0 && idx < names.length) ? names[idx] : '?';
 }
 
 /* ==================== 主菜单关卡列表 ==================== */
