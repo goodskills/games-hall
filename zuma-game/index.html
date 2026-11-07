@@ -215,7 +215,7 @@ const COLORS = [
 const BALL_R = 10;           // 球半径
 const BALL_GAP = 20;         // 球中心间距
 const SHOOT_SPEED = 9;       // 发射球速度
-const CHAIN_SPEED_BASE = 0.55;// 球串基础速度（每帧像素）
+const CHAIN_SPEED_BASE = 0.32;// 球串基础速度（每帧像素）
 const FRICTION = 0.92;       // 插入后球串收紧摩擦
 const CANVAS_PAD = 40;       // 画布边距
 
@@ -326,7 +326,7 @@ const LEVELS = (() => {
     const colors = [];
     for (let c = 0; c < colorCount; c++) colors.push(c);
     const ballCount = Math.round(24 + (i / (total - 1)) * 96);
-    const speedMultiplier = 1.0 + (i / (total - 1)) * 1.5;
+    const speedMultiplier = 1.0 + (i / (total - 1)) * 0.7;
     levels.push({
       name: `${ch.name}·第 ${stage + 1} 阶`,
       path, colors, ballCount, speedMultiplier, spawnInterval: 0
