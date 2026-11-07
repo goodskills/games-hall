@@ -20,7 +20,32 @@
     touch-action: manipulation;
     user-select: none; -webkit-user-select: none;
     overflow-x: hidden;
+    position: relative;
   }
+  /* 漂浮光斑氛围（祖玛级氛围手法） */
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::before {
+    width: 44vmax; height: 44vmax;
+    left: -12vmax; top: -10vmax;
+    background: radial-gradient(circle, rgba(255,220,140,.20) 0%, transparent 70%);
+    animation: bokeh1 14s ease-in-out infinite alternate;
+  }
+  body::after {
+    width: 50vmax; height: 50vmax;
+    right: -14vmax; bottom: -12vmax;
+    background: radial-gradient(circle, rgba(140,220,255,.16) 0%, transparent 70%);
+    animation: bokeh2 18s ease-in-out infinite alternate;
+  }
+  @keyframes bokeh1 { from { transform: translate(0,0) scale(1); } to { transform: translate(6vmax,4vmax) scale(1.15); } }
+  @keyframes bokeh2 { from { transform: translate(0,0) scale(1.1); } to { transform: translate(-5vmax,-6vmax) scale(.95); } }
+  header, .levels, .stats, .grid, .footer, .overlay { position: relative; z-index: 1; }
   header { width: min(94vw, 420px); text-align: center; }
   h1 { font-size: 26px; letter-spacing: 4px; text-shadow: 0 2px 8px rgba(0,0,0,.25); }
   .subtitle { font-size: 12px; opacity: .75; margin-top: 4px; letter-spacing: 1px; }
@@ -60,19 +85,61 @@
     font-size: clamp(30px, 9.5vw, 46px);
   }
   .back {
-    background: linear-gradient(135deg, #818cf8, #c084fc);
-    box-shadow: 0 4px 10px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.35);
-    font-size: clamp(22px, 7vw, 32px); color: rgba(255,255,255,.85);
+    background:
+      radial-gradient(circle at 30% 25%, rgba(255,215,110,.22) 0%, transparent 42%),
+      radial-gradient(circle at 72% 78%, rgba(129,140,248,.35) 0%, transparent 46%),
+      linear-gradient(150deg, #2b2f6e 0%, #3d3a8c 48%, #241f52 100%);
+    box-shadow: 0 4px 12px rgba(0,0,0,.30), inset 0 2px 0 rgba(255,255,255,.28), inset 0 -3px 8px rgba(0,0,20,.35);
+    border: 2px solid rgba(255,215,110,.34);
+    font-size: clamp(22px, 7vw, 30px);
+    color: rgba(255,224,130,.92);
+    text-shadow: 0 0 10px rgba(255,215,110,.6), 0 1px 2px rgba(0,0,0,.5);
+  }
+  /* 金色菱形纹章框 */
+  .back::before {
+    content: '';
+    position: absolute; inset: 9%;
+    border: 1.5px solid rgba(255,215,110,.42);
+    border-radius: 10px;
+    background:
+      radial-gradient(circle at 50% 18%, rgba(255,215,110,.20) 0 2px, transparent 3px),
+      radial-gradient(circle at 50% 82%, rgba(255,215,110,.20) 0 2px, transparent 3px);
+    pointer-events: none;
+  }
+  .back::after {
+    content: '✦';
+    position: absolute; top: 6px; right: 9px;
+    font-size: clamp(10px, 2.6vw, 13px);
+    color: rgba(255,224,130,.55);
+    text-shadow: none;
   }
   .front {
-    background: #fff;
+    background:
+      radial-gradient(circle at 50% 88%, rgba(255,203,110,.16) 0%, transparent 55%),
+      linear-gradient(160deg, #fffdf4 0%, #fdf6e3 100%);
+    box-shadow: inset 0 0 0 2px rgba(255,203,110,.45), inset 0 0 0 5px rgba(255,255,255,.9);
     transform: rotateY(180deg);
     box-shadow: 0 4px 10px rgba(0,0,0,.18);
   }
   .card.matched .front {
     box-shadow: 0 0 0 3px #34d399, 0 4px 10px rgba(0,0,0,.18);
   }
-  .card.matched { animation: pop .4s ease; pointer-events: none; }
+  .card.matched { animation: pop .4s ease, matchedGlow 1.6s ease .1s; pointer-events: none; }
+  @keyframes matchedGlow {
+    0%   { box-shadow: 0 0 0 rgba(255,215,110,0); }
+    30%  { box-shadow: 0 0 26px rgba(255,215,110,.95), 0 0 44px rgba(255,203,110,.5); }
+    100% { box-shadow: 0 0 12px rgba(255,215,110,.35); }
+  }
+  /* 配对星星粒子 */
+  .spark-star {
+    position: absolute; width: 10px; height: 10px; pointer-events: none; z-index: 60;
+    animation: sparkFly .8s ease-out forwards;
+  }
+  .spark-star::before { content: '✦'; font-size: inherit; color: inherit; }
+  @keyframes sparkFly {
+    0%   { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(.2); opacity: 0; }
+  }
   @keyframes pop {
     0% { transform: scale(1); }
     45% { transform: scale(1.1); }
@@ -204,7 +271,27 @@
     osc.start(t); osc.stop(t + dur + 0.05);
   }
   var sFlip  = function () { tone(520, 0.08, 0, 'triangle', 0.07); };
-  var sMatch = function () { tone(660, 0.12, 0); tone(880, 0.16, 0.1); };
+  var sMatch = function () { tone(660, 0.12, 0); tone(880, 0.16, 0.1); tone(1320, 0.2, 0.2); };
+  // 配对星光粒子：从两张卡片中心飞出小星星
+  function spawnStars(el) {
+    var r = el.getBoundingClientRect();
+    var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    var colors = ['#ffd76e', '#fff', '#ffe9a8', '#a5f3fc'];
+    for (var i = 0; i < 8; i++) {
+      var s = document.createElement('span');
+      s.className = 'spark-star';
+      var a = (i / 8) * Math.PI * 2 + Math.random() * 0.6;
+      var dist = 46 + Math.random() * 52;
+      s.style.left = cx + 'px';
+      s.style.top = cy + 'px';
+      s.style.fontSize = (9 + Math.random() * 8) + 'px';
+      s.style.color = colors[i % colors.length];
+      s.style.setProperty('--dx', (Math.cos(a) * dist).toFixed(0) + 'px');
+      s.style.setProperty('--dy', (Math.sin(a) * dist - 24).toFixed(0) + 'px');
+      document.body.appendChild(s);
+      (function (node) { setTimeout(function () { node.remove(); }, 850); })(s);
+    }
+  }
   var sMiss  = function () { tone(220, 0.15, 0, 'sawtooth', 0.05); };
   var sWin   = function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.18, i * 0.12); }); };
 
@@ -293,6 +380,7 @@
       // 配对成功
       setTimeout(function () {
         a.classList.add('matched'); b.classList.add('matched');
+        spawnStars(a); spawnStars(b);
         a.classList.remove('flipped'); b.classList.remove('flipped');
         matched++;
         pairsEl.textContent = matched + '/' + LEVELS[level].pairs;
@@ -327,7 +415,30 @@
 
     resultEl.textContent = '用了 ' + moves + ' 步 / ' + fmt(sec);
     recordEl.textContent = isRecord ? '🎉 新纪录！' : '';
-    setTimeout(function () { overlay.classList.add('show'); }, 450);
+    confetti();
+    setTimeout(function () { overlay.classList.add('show'); }, 650);
+  }
+
+  /* 胜利撒花：全屏彩色纸屑 */
+  function confetti() {
+    var colors = ['#ffd76e', '#ff6b8a', '#7ee0a3', '#7ec8ff', '#c8a2ff', '#fff'];
+    for (var i = 0; i < 60; i++) {
+      var p = document.createElement('span');
+      p.style.cssText = 'position:fixed;top:-14px;left:' + (Math.random() * 100) + 'vw;' +
+        'width:' + (6 + Math.random() * 7) + 'px;height:' + (9 + Math.random() * 8) + 'px;' +
+        'background:' + colors[i % colors.length] + ';' +
+        'border-radius:' + (Math.random() < 0.5 ? '50%' : '2px') + ';' +
+        'z-index:99;pointer-events:none;' +
+        'transition:transform ' + (2.4 + Math.random() * 1.6) + 's cubic-bezier(.3,.6,.6,1),opacity 3s;';
+      document.body.appendChild(p);
+      (function (node, delay) {
+        setTimeout(function () {
+          node.style.transform = 'translate(' + ((Math.random() - 0.5) * 160) + 'px,' + (window.innerHeight + 60) + 'px) rotate(' + ((Math.random() - 0.5) * 900) + 'deg)';
+          node.style.opacity = '0';
+        }, delay);
+        setTimeout(function () { node.remove(); }, delay + 4200);
+      })(p, Math.random() * 500);
+    }
   }
 
   /* ---------- 交互绑定 ---------- */
