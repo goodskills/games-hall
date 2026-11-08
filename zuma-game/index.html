@@ -407,6 +407,7 @@ function tToDir(path, lengths, t) {
 function initLevel(idx) {
   levelIndex = idx;
   levelData = LEVELS[idx];
+  levelData.chapter = Math.floor(idx / 8);
   const { path } = levelData;
   levelData._lengths = buildPathLengths(path);
 
@@ -418,7 +419,7 @@ function initLevel(idx) {
   const headT = Math.min(0.32, (levelData.ballCount * BALL_GAP) / total);
   // 道具系统：第 5 关(levelIndex>=4)起随机埋道具球，关卡越深越多
   const powerTypes = ['bomb', 'lightning', 'freeze', 'rewind'];
-  const pwCount = levelIndex >= 4 ? Math.min(4, 2 + Math.floor((levelIndex - 4) / 8)) : 0;
+  const pwCount = levelIndex >= 4 ? Math.min(8, 3 + Math.floor((levelIndex - 4) / 6)) : 0;
   const pwSlots = new Set();
   let guard = 0;
   while (pwSlots.size < pwCount && guard++ < 60) {
@@ -1129,148 +1130,210 @@ function initBackground() {
   ];
 }
 
-function drawBackground(t) {
-  // ① 丛林底图（真实照片，若加载失败则用渐变兜底）
-  if (bgReady && bgImage) {
-    // 缓慢视差：随时间极轻微平移，营造呼吸感
-    const drift = Math.sin(t * 0.10) * W * 0.012;
-    const scale = 1.14;
-    const dw = W * scale, dh = H * scale;
-    const dx = (W - dw) / 2 + drift;
-    const dy = (H - dh) / 2 + Math.cos(t * 0.08) * H * 0.008;
-    ctx.drawImage(bgImage, dx, dy, dw, dh);
+/* ==================== 渲染：八章主题化场景（祖玛氛围 v3） ====================
+   每章专属色板 + 天体 + 双层剪影 + 特征元素 + 地面 + 氛围粒子 + 暗角
+   全程序化绘制，形状用固定随机种子（seed），每帧稳定不跳动
+============================================================ */
+const CHAPTER_SCENES = [
+  { sky:['#7ec850','#e8e2a0','#c9a84c'], far:'#5d8a4a', mid:'#3f6b35', ground:'#2d4d28',
+    sun:{x:0.78,y:0.20,c:'rgba(255,243,196,0.9)',r:0.085}, deco:'acacia', grass:true },
+  { sky:['#173a2a','#2d5a3d','#17332a'], far:'#1e4632', mid:'#163524', ground:'#0f2418',
+    rays:true, deco:'pines', birds:true },
+  { sky:['#f7c873','#eda65a','#d8904a'], far:'#c08a50', mid:'#9a6a3a', ground:'#7a5230',
+    sun:{x:0.50,y:0.15,c:'rgba(255,250,220,0.95)',r:0.10}, deco:'cactus' },
+  { sky:['#a8c8e8','#7ba8d0','#5a88b8'], far:'#9ec2dd', mid:'#7898ba', ground:'#5878a0',
+    snow:true, deco:'icepeaks' },
+  { sky:['#2a1012','#5a1e14','#7a2e18'], far:'#401812', mid:'#2a100c', ground:'#1c0a08',
+    glow:{x:0.5,y:0.58,c:'rgba(255,120,40,0.30)'}, embers:true, deco:'volcano' },
+  { sky:['#0f2015','#17321c','#0c1a10'], far:'#14301c', mid:'#0e2414', ground:'#081408',
+    fireflies:true, deco:'vines' },
+  { sky:['#0a0f2a','#141b40','#0e1230'], far:'#1a2040', mid:'#121630', ground:'#0a0c1e',
+    stars:true, moon:{x:0.20,y:0.13,r:0.045}, deco:'ridge' },
+  { sky:['#2a1c10','#4a3218','#33230f'], far:'#4a3218', mid:'#33240f', ground:'#1f1508',
+    glow:{x:0.5,y:0.5,c:'rgba(255,200,80,0.16)'}, fireflies:true, deco:'temple' },
+];
 
-    // 暗化 + 压绿：让彩球成为绝对视觉焦点（这是祖玛的关键手法）
-    ctx.fillStyle = 'rgba(6, 18, 10, 0.52)';
-    ctx.fillRect(0, 0, W, H);
-
-    // 中心提亮（祭坛聚光，把视线引向球道）
-    const spot = ctx.createRadialGradient(W / 2, H * 0.48, 0, W / 2, H * 0.48, W * 0.62);
-    spot.addColorStop(0, 'rgba(190,220,150,0.14)');
-    spot.addColorStop(0.55, 'rgba(120,160,90,0.05)');
-    spot.addColorStop(1, 'rgba(0,0,0,0.22)');
-    ctx.fillStyle = spot;
-    ctx.fillRect(0, 0, W, H);
-  } else {
-    // 兜底：代码渐变背景
-    const sky = ctx.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0, '#1c2a1a');
-    sky.addColorStop(0.35, '#243b22');
-    sky.addColorStop(0.7, '#1a2b18');
-    sky.addColorStop(1, '#0d160c');
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, W, H);
-  }
-
-  // ② 远山雾霭（多层柔和云雾）
-  for (let layer = 0; layer < 3; layer++) {
-    const yBase = H * (0.18 + layer * 0.10);
-    const alpha = 0.05 + layer * 0.025;
-    ctx.beginPath();
-    ctx.moveTo(0, yBase);
-    for (let x = 0; x <= W; x += 24) {
-      const y = yBase + Math.sin((x * 0.011) + layer * 2.1 + t * 0.06) * 26 + Math.sin(x * 0.031 + layer) * 12;
-      ctx.lineTo(x, y);
-    }
-    ctx.lineTo(W, H);
-    ctx.lineTo(0, H);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(150,200,160,' + alpha + ')';
-    ctx.fill();
-  }
-
-  // ③ 丛林树冠剪影（顶部垂下的枝叶）
-  ctx.save();
-  ctx.fillStyle = 'rgba(8,20,8,0.62)';
-  for (let i = 0; i < 16; i++) {
-    const x = (i / 15) * W + Math.sin(i * 3.3) * 18;
-    const len = H * (0.10 + ((i * 37) % 13) / 90);
-    ctx.beginPath();
-    ctx.moveTo(x - 26, -6);
-    ctx.quadraticCurveTo(x, len * 0.6, x + 4, len);
-    ctx.quadraticCurveTo(x + 24, len * 0.55, x + 34, -6);
-    ctx.closePath();
-    ctx.fill();
-  }
-  for (let i = 0; i < 10; i++) {
-    const x = (i / 9) * W;
-    const y = H * 0.02 + Math.sin(i * 2.7) * 12;
-    ctx.beginPath();
-    ctx.ellipse(x, y, W * 0.075, H * 0.035, Math.sin(i) * 0.4, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-
-  // ④ 神庙石柱（左右两侧对称）
-  drawTemplePillar(W * 0.035, H * 0.30, W * 0.075, H * 0.62);
-  drawTemplePillar(W * 0.965, H * 0.30, W * 0.075, H * 0.62);
-
-  // ⑤ 火把光晕（暖橙色脉动）
-  bgTorches.forEach(tc => {
-    const flick = 0.72 + Math.sin(t * 6 + tc.phase) * 0.16 + Math.sin(t * 13 + tc.phase * 2) * 0.08;
-    const R = W * 0.16 * flick;
-    const g = ctx.createRadialGradient(tc.x, tc.y, 0, tc.x, tc.y, R);
-    g.addColorStop(0, 'rgba(255,170,60,' + (0.38 * flick) + ')');
-    g.addColorStop(0.4, 'rgba(255,120,30,' + (0.14 * flick) + ')');
-    g.addColorStop(1, 'rgba(255,90,20,0)');
-    ctx.beginPath();
-    ctx.arc(tc.x, tc.y, R, 0, Math.PI * 2);
-    ctx.fillStyle = g;
-    ctx.fill();
-  });
-
-  // ⑥ 中央神圣光柱（祖玛祭坛感）
-  const beam = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W * 0.55);
-  beam.addColorStop(0, 'rgba(255,240,180,0.09)');
-  beam.addColorStop(0.5, 'rgba(255,220,140,0.035)');
-  beam.addColorStop(1, 'rgba(255,200,100,0)');
-  ctx.fillStyle = beam;
-  ctx.fillRect(0, 0, W, H);
-
-  // ⑦ 暗角（聚焦画面中心）
-  const vig = ctx.createRadialGradient(W / 2, H / 2, W * 0.28, W / 2, H / 2, W * 0.78);
-  vig.addColorStop(0, 'rgba(0,0,0,0)');
-  vig.addColorStop(1, 'rgba(0,0,0,0.52)');
-  ctx.fillStyle = vig;
-  ctx.fillRect(0, 0, W, H);
+function sceneRand(seed) {
+  let s = seed;
+  return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
 }
 
-/* 神庙石柱：分节柱身 + 柱头 + 苔藓 */
-function drawTemplePillar(cx, cy, pw, ph) {
-  ctx.save();
-  const g = ctx.createLinearGradient(cx - pw / 2, 0, cx + pw / 2, 0);
-  g.addColorStop(0, 'rgba(20,26,18,0.55)');
-  g.addColorStop(0.35, 'rgba(120,112,92,0.72)');
-  g.addColorStop(0.6, 'rgba(150,142,120,0.68)');
-  g.addColorStop(1, 'rgba(30,34,24,0.55)');
-  ctx.fillStyle = g;
-  ctx.fillRect(cx - pw / 2, cy, pw, ph);
+function drawSilhouetteLayer(color, baseY, amp, seed, round, stepW) {
+  const rnd = sceneRand(seed);
+  ctx.beginPath();
+  ctx.moveTo(-10, H + 10);
+  let x = -10;
+  let y = baseY;
+  ctx.lineTo(x, y);
+  while (x < W + 20) {
+    const w = stepW * (0.6 + rnd() * 0.8);
+    const peak = y - amp * (0.4 + rnd() * 0.6);
+    if (round) {
+      ctx.quadraticCurveTo(x + w * 0.5, peak, x + w, y + (rnd() - 0.5) * amp * 0.15);
+    } else {
+      ctx.lineTo(x + w * 0.5, peak);
+      ctx.lineTo(x + w, y + (rnd() - 0.5) * amp * 0.2);
+    }
+    x += w;
+    y = baseY + (rnd() - 0.5) * amp * 0.12;
+  }
+  ctx.lineTo(W + 20, H + 10);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
 
-  // 柱身分节横纹
-  ctx.strokeStyle = 'rgba(0,0,0,0.32)';
-  ctx.lineWidth = 2;
-  for (let i = 1; i < 5; i++) {
-    const y = cy + (ph / 5) * i;
-    ctx.beginPath();
-    ctx.moveTo(cx - pw / 2, y);
-    ctx.lineTo(cx + pw / 2, y);
-    ctx.stroke();
+function drawAcacia(x, baseY, s, color) {
+  ctx.strokeStyle = color; ctx.lineWidth = s * 0.07; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x, baseY); ctx.lineTo(x - s*0.05, baseY - s*0.5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, baseY - s*0.28); ctx.lineTo(x + s*0.18, baseY - s*0.55); ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.ellipse(x - s*0.1, baseY - s*0.62, s*0.34, s*0.14, -0.1, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x + s*0.16, baseY - s*0.68, s*0.26, s*0.11, 0.08, 0, 7); ctx.fill();
+}
+
+function drawCactus(x, baseY, s, color) {
+  ctx.strokeStyle = color; ctx.lineWidth = s*0.13; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x, baseY); ctx.lineTo(x, baseY - s*0.62); ctx.stroke();
+  ctx.lineWidth = s*0.10;
+  ctx.beginPath(); ctx.moveTo(x, baseY - s*0.32); ctx.quadraticCurveTo(x - s*0.16, baseY - s*0.36, x - s*0.16, baseY - s*0.52); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, baseY - s*0.20); ctx.quadraticCurveTo(x + s*0.14, baseY - s*0.24, x + s*0.14, baseY - s*0.40); ctx.stroke();
+}
+
+function drawPyramid(x, baseY, s, color) {
+  ctx.fillStyle = color;
+  let w = s * 0.9, h = s * 0.16, y = baseY;
+  for (let i = 0; i < 4; i++) {
+    ctx.fillRect(x - w/2, y - h, w, h + 1);
+    y -= h; w *= 0.72;
+  }
+  ctx.fillStyle = 'rgba(255,200,80,0.20)';
+  ctx.beginPath(); ctx.moveTo(x - w*0.5, y); ctx.lineTo(x, y - s*0.1); ctx.lineTo(x + w*0.5, y); ctx.closePath(); ctx.fill();
+}
+
+function drawBackground(t) {
+  const ch = (typeof levelData !== 'undefined' && levelData && levelData.chapter !== undefined) ? levelData.chapter : 0;
+  const P = CHAPTER_SCENES[ch] || CHAPTER_SCENES[0];
+
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, P.sky[0]); sky.addColorStop(0.55, P.sky[1]); sky.addColorStop(1, P.sky[2]);
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H);
+
+  if (P.stars) {
+    const rnd = sceneRand(77);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    for (let i = 0; i < 60; i++) {
+      const x = rnd() * W, y = rnd() * H * 0.6;
+      const tw = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.5 + i));
+      ctx.globalAlpha = tw;
+      ctx.beginPath(); ctx.arc(x, y, rnd() * 1.6 + 0.4, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
 
-  // 柱头
-  ctx.fillStyle = 'rgba(158,150,128,0.75)';
-  ctx.fillRect(cx - pw * 0.72, cy - ph * 0.035, pw * 1.44, ph * 0.045);
+  if (P.sun) {
+    const sx = P.sun.x * W, sy = P.sun.y * H, sr = P.sun.r * W;
+    const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 2.2);
+    sg.addColorStop(0, P.sun.c); sg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, sr * 2.2, 0, 7); ctx.fill();
+    ctx.fillStyle = P.sun.c; ctx.beginPath(); ctx.arc(sx, sy, sr, 0, 7); ctx.fill();
+  }
+  if (P.moon) {
+    const mx = P.moon.x * W, my = P.moon.y * H, mr = P.moon.r * W;
+    ctx.fillStyle = '#f5f0dc'; ctx.beginPath(); ctx.arc(mx, my, mr, 0, 7); ctx.fill();
+    ctx.fillStyle = P.sky[0]; ctx.beginPath(); ctx.arc(mx - mr * 0.42, my - mr * 0.18, mr * 0.86, 0, 7); ctx.fill();
+    const mg = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 3);
+    mg.addColorStop(0, 'rgba(240,235,200,0.16)'); mg.addColorStop(1, 'rgba(240,235,200,0)');
+    ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, mr * 3, 0, 7); ctx.fill();
+  }
 
-  // 苔藓（柱脚绿斑）
-  ctx.fillStyle = 'rgba(60,110,50,0.4)';
-  ctx.beginPath();
-  ctx.ellipse(cx - pw * 0.2, cy + ph * 0.92, pw * 0.42, ph * 0.05, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(cx + pw * 0.22, cy + ph * 0.78, pw * 0.3, ph * 0.035, 0, 0, Math.PI * 2);
-  ctx.fill();
+  if (P.glow) {
+    const gx = P.glow.x * W, gy = P.glow.y * H;
+    const gg = ctx.createRadialGradient(gx, gy, 0, gx, gy, W * 0.42);
+    gg.addColorStop(0, P.glow.c); gg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gg; ctx.fillRect(0, 0, W, H);
+  }
 
+  drawSilhouetteLayer(P.far, H * 0.58, H * 0.16, ch * 31 + 7, ch === 1 || ch === 5, W * 0.14);
+  drawSilhouetteLayer(P.mid, H * 0.72, H * 0.10, ch * 57 + 13, ch !== 3 && ch !== 4, W * 0.10);
+
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  const decoY = H * 0.80;
+  const rnd = sceneRand(ch * 101 + 29);
+  if (P.deco === 'acacia') {
+    for (let i = 0; i < 3; i++) drawAcacia(W * (0.16 + i * 0.34) + rnd() * 30, decoY + rnd() * 20, W * 0.11, P.mid);
+  } else if (P.deco === 'cactus') {
+    for (let i = 0; i < 4; i++) drawCactus(W * (0.12 + i * 0.25) + rnd() * 40, decoY + rnd() * 24, W * 0.09, P.mid);
+  } else if (P.deco === 'volcano') {
+    ctx.fillStyle = P.mid;
+    ctx.beginPath(); ctx.moveTo(W*0.28, decoY + 10); ctx.lineTo(W*0.44, decoY - H*0.22); ctx.lineTo(W*0.50, decoY - H*0.20); ctx.lineTo(W*0.56, decoY + 10); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,140,40,0.5)';
+    ctx.beginPath(); ctx.ellipse(W*0.49, decoY - H*0.21, W*0.05, H*0.012, 0, 0, 7); ctx.fill();
+  } else if (P.deco === 'temple') {
+    drawPyramid(W*0.18, decoY + 16, W*0.20, P.mid);
+    drawPyramid(W*0.82, decoY + 22, W*0.15, P.mid);
+  } else if (P.deco === 'pines') {
+    for (let i = 0; i < 6; i++) {
+      const x = W * (0.08 + i * 0.17) + rnd() * 30, s = W * 0.05;
+      ctx.fillStyle = P.mid;
+      ctx.beginPath(); ctx.moveTo(x, decoY - s); ctx.lineTo(x - s*0.34, decoY); ctx.lineTo(x + s*0.34, decoY); ctx.closePath(); ctx.fill();
+      ctx.fillRect(x - s*0.04, decoY, s*0.08, s*0.14);
+    }
+  }
   ctx.restore();
+
+  const gr = ctx.createLinearGradient(0, H * 0.78, 0, H);
+  gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, P.ground);
+  ctx.fillStyle = gr; ctx.fillRect(0, H * 0.78, W, H * 0.22);
+
+  if (P.snow || P.embers || P.fireflies) {
+    const rnd2 = sceneRand(ch * 13 + 3);
+    ctx.save();
+    for (let i = 0; i < 22; i++) {
+      const px = (rnd2() * W + t * (P.embers ? -14 : 12) * (0.5 + rnd2())) % W;
+      const py = (rnd2() * H + t * (P.embers ? -20 : 16)) % H;
+      const yy = py < 0 ? py + H : py;
+      const xx = px < 0 ? px + W : px;
+      if (P.snow) {
+        ctx.globalAlpha = 0.5 + 0.5 * Math.sin(t * 2 + i);
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(xx, yy, 1.5 + rnd2() * 2, 0, 7); ctx.fill();
+      } else if (P.embers) {
+        ctx.globalAlpha = 0.35 + 0.4 * Math.abs(Math.sin(t * 3 + i * 2));
+        ctx.fillStyle = '#ff9540';
+        ctx.beginPath(); ctx.arc(xx, H - yy * 0.7, 1.2 + rnd2() * 1.8, 0, 7); ctx.fill();
+      } else {
+        const ff = 0.4 + 0.6 * Math.abs(Math.sin(t * 2.2 + i * 1.7));
+        ctx.globalAlpha = ff * 0.8;
+        ctx.fillStyle = i % 3 ? '#d4ffb0' : '#ffe9a0';
+        ctx.beginPath(); ctx.arc(xx, H * 0.2 + yy * 0.62, 1.6 + rnd2() * 1.4, 0, 7); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  if (P.deco === 'vines') {
+    ctx.strokeStyle = 'rgba(10,30,14,0.6)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    for (let i = 0; i < 6; i++) {
+      const x = W * (0.1 + i * 0.16);
+      const len = H * (0.12 + ((i * 53) % 10) / 40);
+      ctx.beginPath(); ctx.moveTo(x, 0);
+      ctx.quadraticCurveTo(x + Math.sin(t * 0.7 + i) * 12, len * 0.5, x + Math.sin(t * 0.5 + i) * 8, len);
+      ctx.stroke();
+    }
+  }
+
+  const beam = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W * 0.52);
+  beam.addColorStop(0, 'rgba(255,240,180,0.10)');
+  beam.addColorStop(0.55, 'rgba(255,220,140,0.04)');
+  beam.addColorStop(1, 'rgba(255,200,100,0)');
+  ctx.fillStyle = beam; ctx.fillRect(0, 0, W, H);
+  const vig = ctx.createRadialGradient(W / 2, H / 2, W * 0.26, W / 2, H / 2, W * 0.76);
+  vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.50)');
+  ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
 }
 
 function tracePath(path) {
