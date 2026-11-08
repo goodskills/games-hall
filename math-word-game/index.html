@@ -817,6 +817,215 @@ function numberOptions(ans) {
   return Array.from(dist).sort(() => Math.random() - 0.5).map(String);
 }
 
+/* ============================================================
+   英语真题冲刺：广州三年级校考真题改编（8 档 · 教科版/外研社）
+   T1 中英互译 → T2 字母填空 → T3 单词归类 → T4 看图选词 →
+   T5 情境对话 → T6 语法 → T7 迷你阅读（朗读两遍） → T8 压轴应答陷阱
+============================================================ */
+const EN_META = {
+  pencil:  { cn: '铅笔', emoji: '✏️', cat: '文具' },
+  ruler:   { cn: '尺子', emoji: '📏', cat: '文具' },
+  eraser:  { cn: '橡皮', emoji: '🧽', cat: '文具' },
+  schoolbag:{ cn: '书包', emoji: '🎒', cat: '文具' },
+  blackboard:{ cn: '黑板', emoji: '🪧', cat: '教室' },
+  classroom:{ cn: '教室', emoji: '🏫', cat: '教室' },
+  mouth:   { cn: '嘴巴', emoji: '👄', cat: '身体' },
+  nose:    { cn: '鼻子', emoji: '👃', cat: '身体' },
+  head:    { cn: '头', emoji: '🙂', cat: '身体' },
+  hand:    { cn: '手', emoji: '✋', cat: '身体' },
+  eye:     { cn: '眼睛', emoji: '👁️', cat: '身体' },
+  family:  { cn: '家庭', emoji: '👨‍👩‍👧', cat: '家庭' },
+  father:  { cn: '爸爸', emoji: '👨', cat: '家庭' },
+  mother:  { cn: '妈妈', emoji: '👩', cat: '家庭' },
+  brother: { cn: '兄弟', emoji: '👦', cat: '家庭' },
+  sister:  { cn: '姐妹', emoji: '👧', cat: '家庭' },
+  friend:  { cn: '朋友', emoji: '🧑‍🤝‍🧑', cat: '人际' },
+  eleven:  { cn: '十一', emoji: '1️⃣1️⃣', cat: '数字' },
+  twelve:  { cn: '十二', emoji: '1️⃣2️⃣', cat: '数字' },
+  twenty:  { cn: '二十', emoji: '2️⃣0️⃣', cat: '数字' },
+  morning: { cn: '早晨', emoji: '🌅', cat: '时间' },
+  yellow:  { cn: '黄色', emoji: '💛', cat: '颜色' },
+  teacher: { cn: '老师', emoji: '🧑‍🏫', cat: '人物' },
+  student: { cn: '学生', emoji: '🧑‍🎓', cat: '人物' }
+};
+
+function mkExamEn(o) {
+  const mainHtml = o.emojiShow
+    ? '<div style="font-size:58px;line-height:1.15;margin:2px 0 10px;">' + o.emojiShow + '</div>' + o.main
+    : o.main;
+  return {
+    type: 'word', tag: o.tag, tagClass: o.boss ? 'boss' : 'exam',
+    main: mainHtml, sub: o.sub || '🔊 听发音 · 选正确答案',
+    extra: o.boss ? '⚔️ 压轴挑战 · 答对星币 4 倍 · 听清再选！' : '🏫 校考真题改编 · 答对星币翻倍',
+    options: o.options, correct: o.correct,
+    speakText: o.speakText || null, smallText: !!o.smallText,
+    exam: true, boss: !!o.boss, coinReward: o.coin || 10, explain: o.explain || null
+  };
+}
+
+/* T1 中英互译（中文选英文，同组干扰） */
+function genEnT1() {
+  const words = Object.keys(EN_META);
+  const w = words[ri2(0, words.length - 1)];
+  const meta = EN_META[w];
+  const distr = words.filter(x => x !== w && EN_META[x].cat === meta.cat).slice(0, 2);
+  const others = words.filter(x => x !== w && !distr.includes(x)).slice(0, 4 - 1 - distr.length);
+  const opts = [w, ...distr, ...others].sort(() => Math.random() - 0.5);
+  return mkExamEn({
+    tag: '真题 T1 · 中英互译', coin: 10, exam: true, emojiShow: meta.emoji,
+    main: meta.cn + ' 的英文是？', sub: '🔊 听发音帮助记忆',
+    options: opts, correct: w, speakText: w
+  });
+}
+
+/* T2 字母填空（残词补全，校考高频） */
+function genEnT2() {
+  const w = GZ_GRADE3_WORDS[ri2(0, GZ_GRADE3_WORDS.length - 1)];
+  return mkExamEn({
+    tag: '真题 T2 · 字母填空', coin: 10, exam: true,
+    emojiShow: EN_META[w.word] ? EN_META[w.word].emoji : '🔤',
+    main: '补全单词：<b>' + w.miss + '</b>（' + w.cn + '）',
+    sub: '音节: ' + w.syllable + ' · 发音: ' + w.phon,
+    options: [w.missAns, ...w.distract].sort(() => Math.random() - 0.5),
+    correct: w.missAns, speakText: w.word,
+    explain: '完整单词：<b>' + w.word + '</b>（' + w.cn + '）<br>缺少的字母是 <b>' + w.missAns + '</b>。'
+  });
+}
+
+/* T3 单词归类（选出不同类，校考必考） */
+function genEnT3() {
+  const cats = ['文具', '身体', '家庭', '人物'];
+  const cat = cats[ri2(0, cats.length - 1)];
+  const inCat = Object.keys(EN_META).filter(k => EN_META[k].cat === cat);
+  const outCat = Object.keys(EN_META).filter(k => EN_META[k].cat !== cat);
+  if (inCat.length < 3 || !outCat.length) return genEnT1();
+  const odd = outCat[ri2(0, outCat.length - 1)];
+  const three = inCat.sort(() => Math.random() - 0.5).slice(0, 3);
+  const opts = [odd, ...three].sort(() => Math.random() - 0.5);
+  const catCn = { '文具': '学习文具', '身体': '身体部位', '家庭': '家庭成员', '人物': '学校人物' }[cat];
+  return mkExamEn({
+    tag: '真题 T3 · 单词归类', coin: 10, exam: true,
+    main: '选出<b>不同类</b>的一个单词：',
+    sub: '提示: 其余三个都属于「' + catCn + '」',
+    options: opts, correct: odd,
+    speakText: opts.join(', '),
+    explain: '<b>' + three.join(' / ') + '</b> 都是' + catCn + '，<br>而 <b>' + odd + '</b>（' + EN_META[odd].cn + '）不是，所以选它。'
+  });
+}
+
+/* T4 看图选词（趣味 emoji 大图） */
+function genEnT4() {
+  const withEmoji = Object.keys(EN_META).filter(k => EN_META[k].emoji && !/1️⃣|2️⃣/.test(EN_META[k].emoji));
+  const w = withEmoji[ri2(0, withEmoji.length - 1)];
+  const meta = EN_META[w];
+  const distr = Object.keys(EN_META).filter(k => k !== w && EN_META[k].emoji && !/1️⃣|2️⃣/.test(EN_META[k].emoji)).sort(() => Math.random() - 0.5).slice(0, 3);
+  const opts = [w, ...distr].sort(() => Math.random() - 0.5);
+  const askWho = ['father','mother','brother','sister','friend','teacher','student'].includes(w);
+  return mkExamEn({
+    tag: '真题 T4 · 看图选词', coin: 10, exam: true, emojiShow: meta.emoji,
+    main: askWho ? 'Who is this? 这是谁？' : "What's this? 这是什么？",
+    sub: '🔊 选出对应的英文单词',
+    options: opts, correct: w, speakText: w
+  });
+}
+
+/* T5 情境对话（校考交际真题，现成数据） */
+function genEnT5() {
+  const d = GZ_DIALOGUES[ri2(0, GZ_DIALOGUES.length - 1)];
+  return mkExamEn({
+    tag: '真题 T5 · 情境对话', coin: 10, exam: true, smallText: true,
+    main: d.main, sub: d.sub,
+    options: d.options.sort(() => Math.random() - 0.5), correct: d.correct,
+    speakText: d.speakA + ' ' + (d.speakB || ''),
+    explain: '对话应答：<b>' + d.correct + '</b> ✓<br>' + d.extra
+  });
+}
+
+/* T6 语法（am/is/are 与 a/an，校考基础） */
+function genEnT6() {
+  const bank = [
+    { q: 'I ___ nine years old.', a: 'am', opts: ['am', 'is', 'are'], tip: 'I 后面用 am' },
+    { q: 'He ___ my father.', a: 'is', opts: ['am', 'is', 'are'], tip: 'He/She/It 用 is' },
+    { q: 'They ___ my friends.', a: 'are', opts: ['am', 'is', 'are'], tip: 'They/We/You 用 are' },
+    { q: 'She ___ a teacher.', a: 'is', opts: ['am', 'is', 'are'], tip: 'She 用 is' },
+    { q: 'This is ___ apple.', a: 'an', opts: ['a', 'an'], tip: '元音音素开头用 an' },
+    { q: 'This is ___ ruler.', a: 'a', opts: ['a', 'an'], tip: '辅音音素开头用 a' },
+    { q: 'I have ___ orange.', a: 'an', opts: ['a', 'an'], tip: 'orange 是元音开头' },
+    { q: 'That is ___ big bag.', a: 'a', opts: ['a', 'an'], tip: 'big 是辅音开头' }
+  ];
+  const item = bank[ri2(0, bank.length - 1)];
+  return mkExamEn({
+    tag: '真题 T6 · 语法基础', coin: 10, exam: true,
+    main: item.q, sub: '语法考点: ' + item.tip,
+    options: item.opts.sort(() => Math.random() - 0.5), correct: item.a,
+    speakText: item.q.replace('___', 'blank'),
+    explain: '正确答案：<b>' + item.a + '</b><br>' + item.tip + '。'
+  });
+}
+
+/* T7 迷你阅读（朗读两遍 · 听读理解，校考新题型） */
+function genEnT7() {
+  const bank = [
+    { dial: "A: Good morning! I'm Ben.<br>B: Good morning, Ben! I'm Lily.", speak: "Good morning! I'm Ben. Good morning, Ben! I'm Lily.",
+      q: "What is the boy's name? 这个男孩叫什么？", a: "Ben", opts: ['Ben', 'Lily', 'Tom'], tip: "I'm Ben = 男孩叫 Ben" },
+    { dial: "A: How old are you, Ann?<br>B: I'm eight.", speak: "How old are you, Ann? I'm eight.",
+      q: 'How old is Ann? Ann 几岁了？', a: 'eight', opts: ['eight', 'nine', 'seven'], tip: "I'm eight = 八岁" },
+    { dial: "A: Is this your ruler?<br>B: No, it's my pencil.", speak: "Is this your ruler? No, it's my pencil.",
+      q: 'What is it? 这是什么？', a: 'pencil', opts: ['ruler', 'pencil', 'bag'], tip: 'my pencil = 我的铅笔' },
+    { dial: "A: Who is that man?<br>B: He is my father.", speak: "Who is that man? He is my father.",
+      q: 'Who is the man? 那位男士是谁？', a: 'father', opts: ['father', 'brother', 'teacher'], tip: 'my father = 我的爸爸' },
+    { dial: "A: Goodbye, Miss White!<br>B: Goodbye, children!", speak: "Goodbye, Miss White! Goodbye, children!",
+      q: 'What are they doing? 他们在做什么？', a: 'Goodbye', opts: ['Goodbye', 'Reading', 'Eating'], tip: 'Goodbye = 再见告别' }
+  ];
+  const item = bank[ri2(0, bank.length - 1)];
+  return mkExamEn({
+    tag: '真题 T7 · 迷你阅读', coin: 10, exam: true, smallText: true,
+    main: item.dial + '<br><br>' + item.q, sub: '🔊 朗读两遍 · 听完再选',
+    options: item.opts.sort(() => Math.random() - 0.5), correct: item.a,
+    speakText: item.speak,
+    explain: '对话关键词：<b>' + item.tip + '</b>'
+  });
+}
+
+/* T8 压轴应答陷阱（广州校考"卡分王"，How old ≠ How are you 等） */
+function genEnT8() {
+  const bank = [
+    { q: 'How old are you?', a: "I'm nine.", opts: ["I'm nine.", "I'm fine, thank you.", "My name is Ben."],
+      tip: "How old 问<b>年龄</b>→答 I'm + 数字；I'm fine 是回答 How are you 的！" },,
+    { q: 'How are you?', a: "I'm fine, thank you.", opts: ["I'm nine.", "I'm fine, thank you.", "My name is Lily."],
+      tip: "How are you 问<b>近况</b>→答 I'm fine；I'm nine 是回答 How old 的！" },,
+    { q: "What's your name?", a: "My name is Ben.", opts: ["My name is Ben.", "I'm nine.", "I'm fine."],
+      tip: "What's your name 问<b>名字</b>→答 My name is ..." },,
+    { q: 'Nice to meet you!', a: 'Nice to meet you, too.', opts: ['Nice to meet you, too.', 'How are you?', "I'm fine."],
+      tip: '初次见面回应要加 <b>too</b>（也是）' },
+    { q: 'Thank you!', a: "You're welcome.", opts: ["You're welcome.", "Thank you, too!", "I'm fine."],
+      tip: "Thank you 的回答是 <b>You're welcome</b>（不客气）" },,
+    { q: 'Goodbye, Miss White!', a: 'Goodbye, children!', opts: ['Goodbye, children!', 'Good morning!', "I'm fine."],
+      tip: '告别用 <b>Goodbye</b> 呼应，不说 Good morning' }
+  ];
+  const item = bank[ri2(0, bank.length - 1)];
+  return mkExamEn({
+    tag: '⚔️ 压轴 · 应答陷阱', main: item.q, coin: 20, exam: true, boss: true,
+    sub: '压轴挑战 · 全班一半人栽在这题', smallText: true,
+    options: item.opts.sort(() => Math.random() - 0.5), correct: item.a,
+    speakText: item.q,
+    explain: '🚨 <b>陷阱解析：</b>' + item.tip + '<br>正确应答：<b>' + item.a + '</b>'
+  });
+}
+
+/* 英语真题冲刺编排：10 题 = 7 档爬坡 + 第 8 题压轴 + 2 题收尾 */
+function genWordExamSprint(i) {
+  if (i === 0) return genEnT1();
+  if (i === 1) return genEnT2();
+  if (i === 2) return genEnT3();
+  if (i === 3) return genEnT4();
+  if (i === 4) return genEnT5();
+  if (i === 5) return genEnT6();
+  if (i === 6) return genEnT7();
+  if (i === 7) return genEnT8();
+  return [genEnT1, genEnT4, genEnT5, genEnT7][ri2(0, 3)]();
+}
+
 /* 数学初级: 口算速算 */
 function genMathBasic() {
   const types = ['add', 'sub', 'mul', 'div'];
@@ -1143,7 +1352,8 @@ const LEVELS = {
       { id: 'basic', icon: '🟢', name: '初级', desc: '单词中英互译<br>建立信心', gen: genWordBasic },
       { id: 'mid', icon: '🟡', name: '中级', desc: '单词字母填空<br>攻克拼写', gen: genWordMid },
       { id: 'high', icon: '🔴', name: '高级', desc: '情境对话填空<br>校考交际', gen: genWordHigh },
-      { id: 'mix', icon: '🟣', name: '综合大闯关', desc: '全题型随机混合 · 完整模拟校考卷，检验真实实力！', gen: genWordMix }
+      { id: 'mix', icon: '🟣', name: '综合大闯关', desc: '全题型随机混合 · 完整模拟校考卷，检验真实实力！', gen: genWordMix },
+      { id: 'exam', icon: '🏫', name: '真题冲刺', desc: '广州校考真题改编 · 8档题型爬坡<br>第 8 题压轴陷阱 · 星币翻倍！', gen: genWordExamSprint }
     ]
   },
   math: {
@@ -1220,7 +1430,7 @@ function renderQuestion() {
   if (!state.answers) state.answers = [];
   mainEl.innerHTML = q.main;
   // 对话题/应用题文字较长, 缩小字号
-  mainEl.style.fontSize = (q.type === 'dialogue') ? '19px' : (q.tag.indexOf('应用') >= 0 ? '19px' : (q.type === 'fill' ? '32px' : '30px'));
+    mainEl.style.fontSize = (q.smallText) ? '20px' : ((q.type === 'dialogue') ? '19px' : (q.tag.indexOf('应用') >= 0 ? '19px' : (q.type === 'fill' ? '32px' : '30px')));
 
   document.getElementById('quizSub').innerHTML = q.sub;
   document.getElementById('quizExtra').innerHTML = q.extra;
