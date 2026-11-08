@@ -243,6 +243,20 @@
     align-items: center;
     position: relative;
   }
+  /* 真题冲刺模式 */
+  .quiz-tag.exam { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 0 12px rgba(245,158,11,.5); }
+  .quiz-tag.boss { background: linear-gradient(135deg, #7c3aed, #d97706); color: #fff; box-shadow: 0 0 18px rgba(168,85,247,.6); letter-spacing: 2px; }
+  .quiz-main.exam-card { border-color: rgba(245,158,11,.55); background: linear-gradient(160deg, rgba(245,158,11,.10), rgba(30,41,59,.9)); }
+  .quiz-main.boss-card { border-color: #d97706; background: linear-gradient(160deg, rgba(124,58,237,.14), rgba(217,119,6,.10), rgba(30,41,59,.92));
+    box-shadow: 0 0 26px rgba(217,119,6,.28); position: relative; }
+  .quiz-main.boss-card::before { content: '⚔️ 压轴挑战 · 答对星币 4 倍'; position: absolute; top: 0; left: 0; right: 0;
+    display: block; text-align: center; font-size: 11px; font-weight: 800; letter-spacing: 2px; padding: 4px;
+    background: linear-gradient(90deg, #7c3aed, #d97706, #7c3aed); color: #fff; }
+  .gold-flash { animation: goldFlash 1s ease; }
+  @keyframes goldFlash { 0% { filter: brightness(1); } 30% { filter: brightness(1.9) drop-shadow(0 0 16px rgba(255,215,0,.95)); } 100% { filter: brightness(1); } }
+  .exam-explain { text-align: left; background: #1e293b; border-left: 3px solid #fbbf24; padding: 10px 12px;
+    border-radius: 8px; font-size: 13px; line-height: 1.7; color: #e2e8f0; margin-top: 8px; }
+  .exam-explain b { color: #fbbf24; }
   .quiz-tag {
     display: inline-block;
     font-size: 11px;
@@ -926,6 +940,199 @@ function genMathMix() {
 }
 
 /* ============================================================
+   真题冲刺模式：广州三年级校考真题改编（8 档难度阶梯）
+   T1 送分口算 → T2 括号最大 → T3 单位换算 → T4 时间 →
+   T5 分数 → T6 周长 → T7 倍数 → T8 压轴陷阱（应用题/其它题型）
+============================================================ */
+function ri2(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+function pad2(v) { return String(v).padStart(2, '0'); }
+function mkExam(o) {
+  const opts = o.options || numberOptions(o.ans);
+  return {
+    type: 'math', tag: o.tag, tagClass: o.boss ? 'boss' : 'exam',
+    main: o.main, sub: o.sub,
+    extra: o.boss ? '⚔️ 压轴挑战 · 答对星币 4 倍 · 小心陷阱！' : '🏫 校考真题改编 · 答对星币翻倍',
+    options: opts, correct: String(o.correct !== undefined ? o.correct : o.ans),
+    speakText: null, exam: true, boss: !!o.boss, coinReward: o.coin || 5, explain: o.explain || null
+  };
+}
+
+/* T1 送分口算（万以内加减 · 进退位） */
+function genExamT1() {
+  let qText, ans;
+  if (Math.random() < 0.5) {
+    const a = ri2(25, 85), b = ri2(15, 72);
+    qText = a + ' + ' + b + ' = ?'; ans = a + b;
+  } else {
+    const a = ri2(60, 99), b = ri2(12, a - 20);
+    qText = a + ' - ' + b + ' = ?'; ans = a - b;
+  }
+  return mkExam({ tag: '真题 T1 · 送分口算', main: qText, sub: '万以内加减法 · 进退位别马虎', ans, coin: 5 });
+}
+
+/* T2 括号最大填几 */
+function genExamT2() {
+  let qText, ans, sub;
+  if (Math.random() < 0.5) {
+    const b = ri2(4, 9);
+    const lim = b * ri2(3, 8) + ri2(1, b - 1);
+    qText = '( ) × ' + b + ' ＜ ' + lim + '，括号里最大能填几？';
+    ans = Math.floor(lim / b);
+    sub = '想乘法口诀：找不超过 ' + lim + ' 的最大积';
+  } else {
+    const cTotal = ri2(50, 90), bAdd = ri2(15, 40);
+    qText = '( ) + ' + bAdd + ' ＜ ' + cTotal + '，括号里最大能填几？';
+    ans = cTotal - bAdd - 1;
+    sub = '和不变思维：括号最大 = 差 − 1';
+  }
+  return mkExam({ tag: '真题 T2 · 括号最大填几', main: qText, sub, ans, coin: 10, exam: true });
+}
+
+/* T3 单位换算 */
+function genExamT3() {
+  const kind = ri2(0, 2);
+  let qText, ans;
+  if (kind === 0) { const dm = ri2(2, 9); qText = dm + ' 分米 = ( ) 厘米'; ans = dm * 10; }
+  else if (kind === 1) { const m = ri2(2, 9); qText = m + ' 米 = ( ) 分米'; ans = m * 10; }
+  else if (kind === 2) { const t = ri2(2, 5); qText = t + ' 吨 = ( ) 千克'; ans = t * 1000; }
+  else { qText = '1 吨 − 400 千克 = ( ) 千克'; ans = 600; }
+  return mkExam({ tag: '真题 T3 · 单位换算', main: qText, sub: '熟记：1分米=10厘米 · 1米=10分米 · 1吨=1000千克', ans, coin: 10, exam: true });
+}
+
+/* T4 时间计算（经过时间/结束时刻，双向） */
+function genExamT4() {
+  const h = ri2(7, 19), m1 = ri2(0, 55), dur = ri2(15, 50);
+  const total = h * 60 + m1 + dur;
+  const fmt = v => Math.floor(v / 60) + ':' + pad2(v % 60);
+  const askEnd = Math.random() < 0.6;
+  const correct = askEnd ? fmt(total) : String(dur);
+  const wrong = new Set([correct]);
+  let guard = 0;
+  while (wrong.size < 4 && guard++ < 40) {
+    const off = [10, 15, 20, 25, 30][ri2(0, 4)] * (Math.random() < 0.5 ? 1 : -1);
+    const tv = askEnd ? (total + off) : (dur + off);
+    if (tv > 0) wrong.add(askEnd ? fmt(total + off) : String(dur + off));
+  }
+  const qText = askEnd
+    ? '动画片 ' + h + ':' + pad2(m1) + ' 开始，播了 ' + dur + ' 分钟，几时几分结束？'
+    : '淘气 ' + h + ':' + pad2(m1) + ' 开始写作业，' + fmt(total) + ' 写完，他写了多长时间？';
+  return mkExam({
+    tag: '真题 T4 · 时间计算', main: qText, sub: '钟表题：满 60 分进 1 时', coin: 10, exam: true,
+    options: Array.from(wrong).sort(() => Math.random() - 0.5), correct
+  });
+}
+
+/* T5 分数初步 */
+function genExamT5() {
+  const whole = ri2(6, 9), eat = ri2(2, whole - 2);
+  const askEat = Math.random() < 0.6;
+  const correct = askEat ? (eat + '/' + whole) : ((whole - eat) + '/' + whole);
+  const wrong = new Set([correct]);
+  [[whole - eat], [eat], [whole], [eat + 1]].forEach(a => {
+    const cand = a[0] + '/' + whole;
+    if (cand !== correct) wrong.add(cand);
+  });
+  return mkExam({
+    tag: '真题 T5 · 分数初步', main: '把一个月饼平均分成 ' + whole + ' 份，小张吃了 ' + eat + ' 份，' + (askEat ? '吃了这个月饼的几分之几？' : '剩下的是这个月饼的几分之几？'),
+    sub: '分母=平均分的总份数 · 分子=取的份数', coin: 10, exam: true,
+    options: Array.from(wrong).sort(() => Math.random() - 0.5), correct
+  });
+}
+
+/* T6 周长计算（三向） */
+function genExamT6() {
+  const kind = ri2(0, 2);
+  let qText, ans, sub;
+  if (kind === 0) {
+    const a = ri2(5, 12), b = ri2(3, a - 2);
+    qText = '一个长方形相框长 ' + a + ' 厘米、宽 ' + b + ' 厘米，它的周长是多少厘米？';
+    ans = (a + b) * 2; sub = '周长 = (长 + 宽) × 2';
+  } else if (kind === 1) {
+    const side = ri2(4, 12);
+    qText = '一块正方形手帕周长是 ' + (side * 4) + ' 厘米，它的边长是多少厘米？';
+    ans = side; sub = '边长 = 周长 ÷ 4';
+  } else {
+    const a = ri2(8, 15), peri = (a + ri2(4, a - 3)) * 2;
+    qText = '一个长方形的周长是 ' + peri + ' 厘米，长是 ' + a + ' 厘米，宽是多少厘米？';
+    ans = peri / 2 - a; sub = '宽 = 周长 ÷ 2 − 长';
+  }
+  return mkExam({ tag: '真题 T6 · 周长计算', main: qText, sub, ans, coin: 10, exam: true });
+}
+
+/* T7 倍数应用（正向小求大 / 逆向大求小） */
+function genExamT7() {
+  const forward = Math.random() < 0.5;
+  const small = ri2(4, 9), times = ri2(2, 5);
+  let qText, ans, sub;
+  if (forward) {
+    qText = '停车场停了 ' + small + ' 辆小轿车，大巴车的数量是小轿车的 ' + times + ' 倍，大巴车有多少辆？';
+    ans = small * times; sub = '小求大：一个数的几倍 = 乘法';
+  } else {
+    const big = small * times;
+    qText = '停车场停了 ' + big + ' 辆大巴车，正好是小轿车的 ' + times + ' 倍，小轿车有多少辆？';
+    ans = small; sub = '大求小（逆向倍数）：用除法！';
+  }
+  return mkExam({ tag: '真题 T7 · 倍数应用', main: qText, sub, ans, coin: 10, exam: true });
+}
+
+/* T8 压轴陷阱题（广州校考"卡分王"，每 8 题出现一次） */
+function genExamT8() {
+  const pool = [
+    () => {
+      const people = ri2(34, 46), cap = ri2(6, 8);
+      const full = Math.floor(people / cap), rest = people % cap;
+      const vans = rest ? full + 1 : full;
+      return { tag: '压轴 · 进一法', main: '三(2)班 ' + people + ' 名同学去春游，每辆车限坐 ' + cap + ' 人，至少要租几辆车？', ans: vans,
+        explain: '<b>第一步：</b>' + people + ' ÷ ' + cap + ' = ' + full + '（辆）……' + rest + '（人）<br><b>第二步：</b>剩下的 ' + rest + ' 人也要坐车呀！<br>所以至少要 <b>' + vans + ' 辆</b>车。这叫<b>进一法</b>：有余数就多租一辆！' };
+    },
+    () => {
+      const stars = ri2(32, 50), per = ri2(5, 7);
+      const strings = Math.floor(stars / per), rest = stars % per;
+      return { tag: '压轴 · 去尾法', main: '小张折了 ' + stars + ' 颗幸运星，每 ' + per + ' 颗穿成一串，最多能穿几串？', ans: strings,
+        explain: '<b>第一步：</b>' + stars + ' ÷ ' + per + ' = ' + strings + '（串）……' + rest + '（颗）<br><b>第二步：</b>剩下的 ' + rest + ' 颗不够穿一串，只能舍去！<br>所以最多穿 <b>' + strings + ' 串</b>。这叫<b>去尾法</b>：有余数也不加一！' };
+    },
+    () => {
+      const others = ri2(4, 6), each = ri2(6, 9);
+      const total = (others + 1) * each;
+      return { tag: '压轴 · 隐藏陷阱（算自己）', main: '红红和 ' + others + ' 个同学一起折纸鹤，每人折 ' + each + ' 只，他们一共折了多少只？', ans: total,
+        explain: '🚨 <b>陷阱警报：</b>"红红和 ' + others + ' 个同学"，别忘了<b>红红自己</b>！<br>一共是 <b>' + (others + 1) + ' 个人</b>（不是 ' + others + ' 个！）。<br>' + (others + 1) + ' × ' + each + ' = <b>' + total + ' 只</b>。' };
+    },
+    () => {
+      const people = ri2(7, 10);
+      const gaps = people - 1;
+      return { tag: '压轴 · 间隔陷阱', main: '体育课上 ' + people + ' 名同学排成一排做操，每相邻两人之间相距 1 米，这一排全长多少米？', ans: gaps,
+        explain: '🚨 <b>间隔陷阱：</b>' + people + ' 个人排一排，中间的间隔只有 <b>' + gaps + ' 个</b>（两头不算）！<br>全长 = ' + gaps + ' × 1 米 = <b>' + gaps + ' 米</b>。人数和间隔数差 1！' };
+    },
+    () => {
+      const side = ri2(5, 12);
+      return { tag: '压轴 · 周长逆向', main: '一张正方形桌面的周长是 ' + (side * 4) + ' 分米，它的边长是多少分米？', ans: side,
+        explain: '正方形 4 条边都一样长。<br>边长 = 周长 ÷ 4 = ' + (side * 4) + ' ÷ 4 = <b>' + side + ' 分米</b>。' };
+    },
+    () => {
+      const segs = ri2(4, 6), mins = ri2(2, 4);
+      const cuts = segs - 1;
+      return { tag: '压轴 · 锯木头陷阱', main: '把一根木头锯成 ' + segs + ' 段，每锯一次要 ' + mins + ' 分钟，一共要几分钟？', ans: cuts * mins,
+        explain: '🚨 <b>锯木头陷阱：</b>锯成 ' + segs + ' 段，只需要锯 <b>' + cuts + ' 次</b>（不是 ' + segs + ' 次）！<br>' + cuts + ' × ' + mins + ' = <b>' + (cuts * mins) + ' 分钟</b>。段数和次数差 1！' };
+    }
+  ];
+  const q = pool[ri2(0, pool.length - 1)]();
+  return mkExam({ tag: '⚔️ ' + q.tag, main: q.main, sub: '压轴挑战 · 全班一半人都栽在这题', ans: q.ans, coin: 20, exam: true, boss: true, explain: q.explain });
+}
+
+/* 真题冲刺编排：10 题 = 7 档爬坡 + 第 8 题压轴 + 2 题收尾 */
+function genExamSprint(i) {
+  if (i === 0) return genExamT1();
+  if (i === 1) return genExamT2();
+  if (i === 2) return genExamT3();
+  if (i === 3) return genExamT4();
+  if (i === 4) return genExamT5();
+  if (i === 5) return genExamT6();
+  if (i === 6) return genExamT7();
+  if (i === 7) return genExamT8();
+  return [genExamT4, genExamT5, genExamT6, genExamT7][ri2(0, 3)]();
+}
+
+/* ============================================================
    难度选择
    ============================================================ */
 const LEVELS = {
@@ -946,7 +1153,8 @@ const LEVELS = {
       { id: 'basic', icon: '🟢', name: '初级', desc: '口算速算<br>进退位加减·表内乘除', gen: genMathBasic },
       { id: 'mid', icon: '🟡', name: '中级', desc: '带余除法<br>两步混合运算', gen: genMathMid },
       { id: 'high', icon: '🔴', name: '高级', desc: '填未知数<br>应用题小达人', gen: genMathHigh },
-      { id: 'mix', icon: '🟣', name: '综合大冲刺', desc: '全题型随机混合 · 抗粗心终极挑战！', gen: genMathMix }
+      { id: 'mix', icon: '🟣', name: '综合大冲刺', desc: '全题型随机混合 · 抗粗心终极挑战！', gen: genMathMix },
+      { id: 'exam', icon: '🏫', name: '真题冲刺', desc: '广州校考真题改编 · 8档难度爬坡<br>第 8 题压轴挑战 · 星币翻倍！', gen: genExamSprint }
     ]
   }
 };
@@ -979,7 +1187,7 @@ function startGame(subject, levelId) {
   state.correctCount = 0;
   state.questions = [];
   state.locked = false;
-  for (let i = 0; i < state.totalQ; i++) state.questions.push(lvCfg.gen());
+  for (let i = 0; i < state.totalQ; i++) state.questions.push(lvCfg.gen(i, state.totalQ));
   document.getElementById('runnerIcon').textContent = subject === 'word' ? '🦁' : '🏎️';
   showPanel('panelPlay');
   renderQuestion();
@@ -1007,6 +1215,9 @@ function renderQuestion() {
   tagEl.className = 'quiz-tag ' + (q.tagClass || '');
 
   const mainEl = document.getElementById('quizMain');
+  mainEl.classList.toggle('boss-card', !!q.boss);
+  mainEl.classList.toggle('exam-card', !!q.exam && !q.boss);
+  if (!state.answers) state.answers = [];
   mainEl.innerHTML = q.main;
   // 对话题/应用题文字较长, 缩小字号
   mainEl.style.fontSize = (q.type === 'dialogue') ? '19px' : (q.tag.indexOf('应用') >= 0 ? '19px' : (q.type === 'fill' ? '32px' : '30px'));
@@ -1040,12 +1251,13 @@ function handleAnswer(btn, chosen, correct) {
   state.locked = true;
 
   const isCorrect = (chosen === correct);
+  state.answers = state.answers || [];
+  state.answers.push(isCorrect);
+
   if (isCorrect) {
     btn.classList.add('correct');
     sfx.correct();
     state.correctCount++;
-    state.coins += 5;
-    saveCoins();
     updateStreak(true);
   } else {
     btn.classList.add('wrong');
@@ -1058,6 +1270,23 @@ function handleAnswer(btn, chosen, correct) {
 
   // 提交后朗读: 单词读两遍, 对话读完整句 (慢速跟读)
   const q = state.questions[state.qIndex];
+
+  // 奖励结算（普通+5 / 真题×2 / 压轴×4）与特效（q 在此已定义）
+  const reward = q.coinReward || 5;
+  if (isCorrect) {
+    state.coins += reward;
+    saveCoins();
+    if (q.boss) {
+      const runner = document.getElementById('runnerIcon');
+      runner.classList.remove('gold-flash'); void runner.offsetWidth; runner.classList.add('gold-flash');
+    }
+  }
+  // 压轴/真题的算理解析（答对巩固、答错补救）
+  if (q.explain) {
+    const ex = document.getElementById('quizExtra');
+    if (ex) ex.innerHTML = '<div class="exam-explain">' + q.explain + '</div>';
+  }
+
   if (q.speakText) {
     setTimeout(() => {
       speakEnglish(q.speakText, 0.8);
@@ -1083,6 +1312,15 @@ function finishGame() {
   if (state.correctCount === state.totalQ) { bonus += 25; sfx.win(); }
   state.coins += bonus;
   saveCoins();
+
+  // 真题战神徽章：一轮全对且压轴挑战答对
+  const bossQ = state.questions.some(q => q.boss);
+  if (state.correctCount === state.totalQ && bossQ && state.answers && state.answers[7]) {
+    const n = (parseInt(localStorage.getItem('xb_exam_badges') || '0', 10)) + 1;
+    localStorage.setItem('xb_exam_badges', String(n));
+    const dEl = document.getElementById('resDesc');
+    if (dEl) dEl.innerHTML += '<div style="color:#fbbf24;font-weight:800;margin-top:8px;">🎖️ 真题战神徽章 +1（累计 ' + n + ' 枚）</div>';
+  }
 
   const badgeEl = document.getElementById('resBadge');
   const titleEl = document.getElementById('resTitle');
