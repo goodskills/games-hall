@@ -143,6 +143,16 @@
   .mode-btn .info h3 { font-size: 17px; font-weight: 700; }
   .mode-btn .info p { font-size: 12px; color: var(--text-sub); margin-top: 3px; line-height: 1.4; }
 
+  /* 特遣车库入口卡 */
+  .garage-card { background: linear-gradient(160deg, rgba(56,189,248,.18), rgba(15,23,42,.85)); border: 2px solid rgba(56,189,248,.4); border-radius: 14px; padding: 14px 16px; margin-top: 12px; cursor: pointer; }
+  .garage-card:active { transform: scale(.98); }
+  .garage-card .gc-row { display: flex; align-items: center; gap: 12px; }
+  .garage-card .gc-emoji { font-size: 34px; }
+  .garage-card .gc-info { flex: 1; text-align: left; }
+  .garage-card .gc-title { font-size: 16px; font-weight: 800; color: #38bdf8; }
+  .garage-card .gc-desc { font-size: 12px; color: #94a3b8; margin-top: 2px; line-height: 1.5; }
+  .garage-card .gc-arrow { font-size: 20px; color: #38bdf8; }
+
   /* 难度选择面板 */
   .level-title {
     text-align: center;
@@ -503,6 +513,17 @@
           <h3>极速口算小赛车</h3>
           <p>四档难度: 口算速算 / 带余除法与混合运算<br>填未知数与应用题 / 综合抗粗心挑战<br><span style="color:#fbbf24;">10题限时全对冲刺</span></p>
         </div>
+
+        <div class="garage-card" id="garageEntry">
+          <div class="gc-row">
+            <div class="gc-emoji">🛸</div>
+            <div class="gc-info">
+              <div class="gc-title">🎖️ 特遣车库 · 军饷兑换</div>
+              <div class="gc-desc" id="garageDesc">做题赚的星币 = 军饷！<br>去王牌调度官解锁战车战机，<br>再到小张登山开着冲顶 8848 米！</div>
+            </div>
+            <div class="gc-arrow">›</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -721,10 +742,28 @@ const state = {
 };
 
 document.getElementById('totalCoins').textContent = state.coins;
+// 特遣车库入口卡：绑定跳转 + 动态显示军饷与已解锁款数（主页加载/答题奖励两处刷新）
+function refreshGarageCard() {
+  const garageEl = document.getElementById('garageEntry');
+  if (garageEl && !garageEl.onclick) {
+    garageEl.onclick = () => { window.location.href = 'ace-commander/index.html'; };
+  }
+  const gc = document.getElementById('garageDesc');
+  if (gc) {
+    try {
+      const shared = JSON.parse(localStorage.getItem('xiaozhang_shared_vehicles') || '{"unlocked":[]}');
+      const n = (shared.unlocked || []).length;
+      gc.innerHTML = '星币 = 军饷，可直接解锁战车战机！<br>当前军饷 <b style="color:#facc15;">' + state.coins + '</b> · 已解锁 <b style="color:#38bdf8;">' + n + '</b> 款 → 去机库消费';
+    } catch(e) {}
+  }
+}
+refreshGarageCard();
 
 function saveCoins() {
   localStorage.setItem('xb_coins', state.coins);
   document.getElementById('totalCoins').textContent = state.coins;
+  // 特遣车库卡同步刷新（复用主页初始化的同一函数）
+  if (typeof refreshGarageCard === 'function') refreshGarageCard();
 }
 function updateStreak(isCorrect) {
   state.streak = isCorrect ? state.streak + 1 : 0;

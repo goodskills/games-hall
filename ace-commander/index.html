@@ -421,14 +421,27 @@ function defaultSave() {
 function loadSave() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
+    let data = null;
     if(raw) {
-      const data = JSON.parse(raw);
+      data = JSON.parse(raw);
       if(data.activeVehicle === 'v1') data.activeVehicle = 'v_su7';
       if(data.unlockedVehicles && data.unlockedVehicles.includes('v1')) {
         data.unlockedVehicles = ['v_su7', ...data.unlockedVehicles.filter(x=>x!=='v1')];
       }
-      return Object.assign(defaultSave(), data);
     }
+    const merged = Object.assign(defaultSave(), data || {});
+    // 货币池统一：军饷与学霸小勇士星币共用 xb_coins（跨游戏通兑）
+    const shared = parseInt(localStorage.getItem('xb_coins') || 'NaN', 10);
+    if (!isNaN(shared)) {
+      merged.coins = shared;
+    } else if (!raw && data === null) {
+      // 全新玩家：无迁移
+    } else if (data && typeof data.coins === 'number') {
+      // 首次切换：把旧档军饷迁移进共享池
+      localStorage.setItem('xb_coins', String(data.coins));
+      merged.coins = data.coins;
+    }
+    return merged;
   } catch(e){}
   return defaultSave();
 }
@@ -441,6 +454,8 @@ function saveState() {
       active: S.activeVehicle,
       unlocked: S.unlockedVehicles
     }));
+    // 军饷写回共享货币池（与学霸小勇士星币同池通兑）
+    localStorage.setItem('xb_coins', String(S.coins));
   } catch(e){}
 }
 
@@ -729,6 +744,21 @@ $('btnQuitMission').onclick = () => {
 /* ================= 机库载具解锁与改装 ================= */
 let curHangarTab = 'all'; // 'all' | 'car' | 'plane'
 
+// 页内轻提示条（替代原生 alert，手机端样式统一、无英文按钮）
+function aceToast(msg) {
+  let t = document.getElementById('aceToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'aceToast';
+    t.style.cssText = 'position:fixed; left:50%; top:13%; transform:translateX(-50%); background:rgba(15,23,42,.94); color:#fff; padding:12px 18px; border-radius:12px; border:1px solid rgba(56,189,248,.5); font-size:14px; line-height:1.6; z-index:99999; max-width:84vw; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,.5); transition:opacity .3s; opacity:0; pointer-events:none;';
+    document.body.appendChild(t);
+  }
+  t.innerHTML = msg;
+  t.style.opacity = '1';
+  clearTimeout(t.__tm);
+  t.__tm = setTimeout(() => { t.style.opacity = '0'; }, 2600);
+}
+
 function renderHangar() {
   const grid = $('hangarGrid');
   grid.innerHTML = '';
@@ -776,17 +806,32 @@ function renderHangar() {
         renderHud();
       } else {
         if(S.coins >= v.cost) {
-          if(confirm(`确定消耗 ${v.cost} 军饷解锁【${v.name}】吗？`)) {
+          // 两段式确认：首次点击提示，再次点击才扣军饷（替代原生 confirm，手机端更友好）
+          if(card.__confirm) {
+            card.__confirm = false;
             S.coins -= v.cost;
             S.unlockedVehicles.push(v.id);
             S.activeVehicle = v.id;
             saveState();
             playSound('correct');
+            aceToast('🎉 解锁成功！【' + v.name + '】已出动！');
             renderHangar();
             renderHud();
+          } else {
+            card.__confirm = true;
+            const st = card.querySelector('.h-status');
+            if (st) { st.style.color = '#f87171'; st.textContent = '⚠️ 再点一次确认解锁'; }
+            aceToast('再次点击卡片，确认消耗 ' + v.cost + ' 军饷解锁【' + v.name + '】');
+            setTimeout(() => {
+              card.__confirm = false;
+              if (st && st.textContent.indexOf('再点一次') >= 0) {
+                st.style.color = '#facc15';
+                st.textContent = '💰 ' + v.cost + ' 军饷解锁';
+              }
+            }, 3000);
           }
         } else {
-          alert(`军饷不足！还需要 ${v.cost - S.coins} 💰。多去前线完成调度任务赚取军饷吧！`);
+          aceToast('军饷不足！还差 ' + (v.cost - S.coins) + ' 军饷。<br>去【学霸小勇士】做英语/数学真题赚军饷！');
         }
       }
     };
