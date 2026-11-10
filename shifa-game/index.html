@@ -225,6 +225,81 @@
   .rep-bar i.low { background: linear-gradient(90deg, #ef4444, #f87171); }
   .rep-bar i.mid { background: linear-gradient(90deg, #d4a44c, #facc15); }
 
+  /* ---------- 复习规划 ---------- */
+  .rv-tabs { display: flex; gap: 8px; margin-top: 12px; }
+  .rv-tabs button {
+    flex: 1; padding: 10px 6px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 800;
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); color: #94a3b8; font-family: inherit;
+  }
+  .rv-tabs button.on { background: rgba(212,164,76,.18); border-color: rgba(212,164,76,.5); color: #f5d08a; }
+  .phase-card {
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09);
+    border-radius: 14px; padding: 14px; margin-top: 12px;
+  }
+  .phase-card.now { border-color: rgba(250,204,21,.45); background: rgba(250,204,21,.05); }
+  .phase-head { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 900; }
+  .phase-head .ph-badge { font-size: 10px; font-weight: 800; color: #0a0f1e; background: #facc15; border-radius: 999px; padding: 3px 9px; }
+  .phase-goal { font-size: 12px; color: #9db1d6; margin-top: 6px; line-height: 1.7; }
+  .week-item {
+    display: flex; align-items: flex-start; gap: 10px; padding: 10px 10px; border-radius: 10px;
+    background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); margin-top: 8px; cursor: pointer;
+  }
+  .week-item:active { transform: scale(.99); }
+  .week-item .wk-check {
+    flex: none; width: 22px; height: 22px; border-radius: 7px; margin-top: 1px;
+    border: 2px solid rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #0a0f1e;
+  }
+  .week-item.done .wk-check { background: #22c55e; border-color: #22c55e; color: #fff; }
+  .week-item .wk-title { font-size: 13px; font-weight: 800; color: #e8eef8; }
+  .week-item.done .wk-title { color: #86efac; text-decoration: line-through; }
+  .week-item .wk-desc { font-size: 11px; color: #94a3b8; line-height: 1.7; margin-top: 3px; }
+  .method-card {
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09);
+    border-radius: 14px; padding: 14px; margin-top: 12px;
+  }
+  .method-card h4 { margin: 0; font-size: 15px; font-weight: 900; color: #f5d08a; display: flex; align-items: center; gap: 8px; }
+  .method-card.blue h4 { color: #7dd3fc; }
+  .method-card h4 .mtag { font-size: 10px; color: #94a3b8; font-weight: 400; }
+  .method-step {
+    display: flex; gap: 10px; margin-top: 10px; padding: 10px 12px; border-radius: 10px;
+    background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+  }
+  .method-step .ms-no {
+    flex: none; width: 24px; height: 24px; border-radius: 8px; font-size: 13px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(212,164,76,.2); color: #f5d08a;
+  }
+  .method-card.blue .method-step .ms-no { background: rgba(56,189,248,.18); color: #7dd3fc; }
+  .method-step .ms-t { font-size: 13px; font-weight: 800; color: #e8eef8; }
+  .method-step .ms-d { font-size: 12px; color: #9db1d6; line-height: 1.8; margin-top: 3px; }
+  .method-step .ms-d b { color: #facc15; font-weight: 700; }
+  .tpl {
+    margin-top: 10px; padding: 11px 13px; border-radius: 10px; font-size: 12px; line-height: 2;
+    background: rgba(34,197,94,.07); border: 1px dashed rgba(34,197,94,.35); color: #d1fae5; white-space: pre-wrap;
+  }
+  .essay-card {
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09);
+    border-radius: 14px; padding: 14px; margin-top: 12px;
+  }
+  .essay-q { font-size: 14px; font-weight: 800; color: #f1f5f9; line-height: 1.7; }
+  .essay-mat {
+    margin-top: 8px; padding: 10px 12px; border-radius: 10px; font-size: 12px; line-height: 1.9;
+    background: rgba(56,189,248,.06); border: 1px dashed rgba(56,189,248,.3); color: #cbd5e1; white-space: pre-wrap;
+  }
+  .essay-toggle {
+    margin-top: 10px; width: 100%; padding: 10px; border-radius: 10px; cursor: pointer;
+    background: rgba(212,164,76,.15); border: 1px solid rgba(212,164,76,.4); color: #f5d08a;
+    font-size: 13px; font-weight: 800; font-family: inherit;
+  }
+  .essay-body { display: none; margin-top: 10px; }
+  .essay-body.open { display: block; }
+  .think-line { display: flex; gap: 8px; margin-top: 8px; font-size: 12px; line-height: 1.8; color: #cbd5e1; }
+  .think-line .tl-no { flex: none; color: #facc15; font-weight: 900; }
+  .ans-block {
+    margin-top: 10px; padding: 11px 13px; border-radius: 10px; font-size: 12px; line-height: 2;
+    background: rgba(34,197,94,.08); border: 1px solid rgba(34,197,94,.3); color: #d1fae5; white-space: pre-wrap;
+  }
+
   .toast {
     position: fixed; left: 50%; top: 14%; transform: translateX(-50%);
     background: rgba(15,23,42,.95); color: #fff; padding: 12px 18px; border-radius: 12px;
@@ -250,6 +325,7 @@
     <section id="vMock" class="view"></section>
     <section id="vCards" class="view"></section>
     <section id="vReport" class="view"></section>
+    <section id="vReview" class="view"></section>
   </main>
 </div>
 <div class="toast" id="toast"></div>
@@ -675,7 +751,7 @@ function sfx(kind) {
 /* ==================== 存档 ==================== */
 const SAVE_KEY = 'shifa_save_v1';
 function defaultSave() {
-  return { exp: 0, chCorrect: {}, chTotal: {}, stars: {}, wrong: [], mockBest: {}, stats: { q: 0, right: 0 } };
+  return { exp: 0, chCorrect: {}, chTotal: {}, stars: {}, wrong: [], mockBest: {}, plan: {}, stats: { q: 0, right: 0 } };
 }
 let save = defaultSave();
 try {
@@ -728,7 +804,7 @@ const state = {
 };
 
 /* ==================== 视图切换 ==================== */
-const VIEWS = ['vHome', 'vChapters', 'vQuiz', 'vResult', 'vWrong', 'vMock', 'vCards', 'vReport'];
+const VIEWS = ['vHome', 'vChapters', 'vQuiz', 'vResult', 'vWrong', 'vMock', 'vCards', 'vReport', 'vReview'];
 function show(id) {
   VIEWS.forEach(v => { $('#' + v).classList.toggle('on', v === id); });
   state.view = id.slice(1).toLowerCase();
@@ -775,6 +851,7 @@ function renderHome() {
     <div class="stat-cell"><b>${litTotal()}<span style="font-size:12px">/48</span></b><span>知识卡点亮</span></div>
   </div>
   <div class="menu">
+    <button data-go="review">📝 复习规划·大题方法 <em>9周计划 + 作答思路</em></button>
     <button data-go="mock">🎯 期末全真模拟卷 <em>按卷面结构组卷</em></button>
     <button data-go="wrong">🩹 错题歼灭战 <em>${wrongN ? '待歼灭 ' + wrongN + ' 道' : '暂无错题'}</em></button>
     <button data-go="cards">📚 知识速记手册 <em>考前翻牌速记</em></button>
@@ -785,7 +862,8 @@ function renderHome() {
   $$('#vHome .menu button').forEach(b => b.onclick = () => {
     sfx('click');
     const go = b.dataset.go;
-    if (go === 'mock') { renderMock(); show('vMock'); }
+    if (go === 'review') { renderReview(); show('vReview'); }
+    else if (go === 'mock') { renderMock(); show('vMock'); }
     else if (go === 'wrong') { renderWrong(); show('vWrong'); }
     else if (go === 'cards') { renderCards(); show('vCards'); }
     else if (go === 'report') { renderReport(); show('vReport'); }
@@ -1277,6 +1355,157 @@ $('#btnBack').onclick = () => {
     renderHome(); show('vHome');
   }
 };
+
+/* ==================== 复习规划 · 大题写作方法 ==================== */
+const REVIEW_PLAN = [
+  { ph: '第一阶段 · 一轮跟课过关（第1-6周）', goal: '跟学校进度同步闯关，每周1-2章。目标：选择题正确率到85%，当天错题当天清。', weeks: [
+    { id: 'w1', t: '第1周 · 第一/二单元（列强侵华+近代化探索）', d: '闯关h1、h2各至少1次三星；错题歼灭清零；背熟《南京条约》《马关条约》《辛丑条约》三大条约对比。' },
+    { id: 'w2', t: '第2周 · 第三/四单元（辛亥革命+新民主主义革命）', d: '闯关h3、h4各三星；能手写辛亥革命意义；牢记1919五四运动三个"最"（彻底反帝反封建/新民主主义开端）。' },
+    { id: 'w3', t: '第3周 · 第五单元（北伐·井冈山·长征）', d: '闯关h5三星；按时间线默写南昌起义→秋收起义→井冈山→长征→遵义会议→会宁会师。' },
+    { id: 'w4', t: '第4周 · 第六单元（抗日战争）', d: '闯关h6三星；九一八→西安事变→七七→南京大屠杀→台儿庄→百团大战→日本投降，一条线背熟。' },
+    { id: 'w5', t: '第5周 · 第七/八单元（解放战争+经济社会文化）', d: '闯关h7、h8三星；三大战役+渡江战役时间地点意义；近代社会生活变化特征会表述。' },
+    { id: 'w6', t: '第6周 · 道法四单元全部过关', d: 'd1-d4全部三星；网络生活/规则与自由/犯罪特征/总体国家安全观四组概念背熟。' }
+  ]},
+  { ph: '第二阶段 · 二轮歼灭与大题专练（第7-8周）', goal: '错题本清零＋时间轴总串＋大题写作方法专练。', weeks: [
+    { id: 'w7', t: '第7周 · 错题歼灭+时间轴串线', d: '错题本清零（连对2次毕业）；把近代史1840-1949完整时间轴默写1遍；重做排序题。' },
+    { id: 'w8', t: '第8周 · 大题方法专练', d: '学习「答题方法」页签：材料题四步法、辨析题三步法、小论文模板；对照「大题示范」自己先写再看参考答案。' }
+  ]},
+  { ph: '第三阶段 · 考前冲刺（考前2周）', goal: '全真模拟＋速记手册＋范文背诵。', weeks: [
+    { id: 'w9', t: '考前第2周 · 模拟卷+手册', d: '历史卷、道法卷、双科联考各1套（限时作答）；每天翻一遍速记手册薄弱章；错题本保持清零。' },
+    { id: 'w10', t: '考前最后1周 · 范文背诵+查漏', d: '背诵大题示范的答题框架（观点-论证-结论/判断-说理-做法）；学习报告里正确率最低的章定点重刷；调整作息。' }
+  ]}
+];
+const REVIEW_METHODS = [
+  { blue: false, ico: '🔍', title: '历史材料题 · 四步法', tag: '期末卷50分都在这', steps: [
+    { t: '第一步 · 读设问（先看问什么）', d: '圈出关键动词：<b>根据材料</b>＝答案在材料里找；<b>结合所学知识</b>＝要答课本内容；<b>原因/影响/启示/变化</b>＝答题方向完全不同。启示题答"我们要……"。' },
+    { t: '第二步 · 读材料划关键词', d: '圈时间、人物、条约名、引号里的句子。注意材料出处（如"——摘自《南京条约》"），出处本身就是提示。' },
+    { t: '第三步 · 联课本知识点', d: '把材料关键词翻译成课本术语：看到"协定关税"→关税主权；看到"允许开设工厂"→资本输出；看到"严禁人民反帝"→清政府成为列强统治工具。' },
+    { t: '第四步 · 组织答案', d: '①<b>分点作答</b>写序号①②③；②<b>用课本术语</b>不用大白话；③<b>看分值下笔</b>：4分答2点、6分答3点；④书写工整，卷面就是隐形的分。' }
+  ]},
+  { blue: false, ico: '✍️', title: '历史小论文/论述题 · 三段模板', tag: '观点—论证—结论', steps: [
+    { t: '开头 · 亮观点', d: '一句话表明态度：<b>"我认同……""……是……的重要里程碑。"</b>观点要能被史实支撑，不要喊空口号。' },
+    { t: '中间 · 史实论证（2-3个）', d: '每个史实按<b>"时间＋事件＋影响"</b>写：如"1911年辛亥革命推翻清王朝，结束了两千多年君主专制制度"。史实要准确，影响要对应。' },
+    { t: '结尾 · 回扣观点', d: '用"综上所述，……"总结，再次点明观点。首尾呼应，结构完整。' }
+  ], tpl: '【模板】\n观点：我认同"XXXX"。\n论证：首先，……（史实1+影响）。其次，……（史实2+影响）。\n结论：综上所述，XXXX（回扣观点）。' },
+  { blue: true, ico: '⚖️', title: '道法辨析题 · 三步法', tag: '判断—说理—做法', steps: [
+    { t: '第一步 · 完整判断', d: '不要只写"对/错"！写完整句：<b>"这一观点是错误的/片面的。"</b>片面比错误更常用（观点部分对部分错时）。' },
+    { t: '第二步 · 说理', d: '两句式：①<b>亮出课本知识点</b>（"根据教材，……"）；②<b>结合材料分析</b>（"材料中……的做法正是……"）。说理必须用道法语言。' },
+    { t: '第三步 · 给做法', d: '指出正确做法：<b>"因此，我们应该……"</b>（具体的、可操作的，不是空话）。' }
+  ], tpl: '【模板】\n①判断：这一观点是片面的。\n②说理：根据教材，……（知识点）。材料中……（结合材料）。\n③做法：因此，我们应该……。' },
+  { blue: true, ico: '🧭', title: '道法"怎么做/启示"题 · 主体分析法', tag: '分主体分点不漏答', steps: [
+    { t: '想主体', d: '按<b>国家/社会—学校—个人（青少年）</b>分层想，一层答一点，不会漏。' },
+    { t: '青少年角度万能两件套', d: '①<b>意识上</b>：树立……观念，增强……意识；②<b>行动上</b>：学习……知识/宣传……/同……行为作斗争/从身边小事做起。' },
+    { t: '常见套句积累', d: '维护国家安全：保守国家秘密、发现危害行为拨打12339举报；合理用网：提高媒介素养、学会"信息节食"；预防犯罪：杜绝不良行为、增强法治观念。' }
+  ]},
+  { blue: true, ico: '📏', title: '道法材料题 · 三读一联', tag: '和历史的四步法呼应', steps: [
+    { t: '读材料', d: '找人物、行为、结果三要素——道法材料通常是"某人做了某事，产生某结果"。' },
+    { t: '读设问', d: '辨析类→用三步法；做法类→用主体分析法；评析类→先评价对错再给理由。' },
+    { t: '联知识点', d: '道法答案全部来自课本概念：<b>必须用术语</b>（如"亲社会行为""刑事违法性""法定义务"），平时背书就是攒弹药。' }
+  ]}
+];
+const REVIEW_ESSAYS = [
+  { subj: 'h', q: '阅读材料，回答问题。（8分）', mat: '“英商进出口货物应纳税款，必须经过双方协议……清政府保证严禁人民参加各种形式的反帝活动。”\n——分别摘自《南京条约》《辛丑条约》\n（1）材料中《南京条约》的条款破坏了中国哪项主权？（2分）\n（2）《辛丑条约》签订后，中国的社会性质发生了怎样的变化？（3分）\n（3）回顾这段历史，你有什么感悟？（3分）',
+    think: [
+      ['第(1)问·四步法走一遍', '设问问"哪项主权"→材料关键词"应纳税款经过双方协议"→联课本：协定关税→答"关税主权"。只答2分题，一句话即可，不展开。'],
+      ['第(2)问·注意"变化"陷阱', '问的是"社会性质变化"→联课本结论：《辛丑条约》使中国<b>完全沦为</b>半殖民地半封建社会。注意别写成"开始沦为"（那是鸦片战争）。'],
+      ['第(3)问·感悟题万能思路', '情感升华两步：<b>落后就要挨打</b>（从史实得出教训）＋<b>青年责任</b>（努力学习、振兴祖国）。这类题人人能得分，但用"化被动为主动"的句式写得更满。']
+    ],
+    ans: '【参考答案】\n（1）关税主权（关税自主权）。（2分）\n（2）《辛丑条约》的签订，使中国完全沦为半殖民地半封建社会，清政府成为帝国主义列强统治中国的工具。（3分）\n（3）感悟：落后就要挨打，弱国无外交；中国人民具有不屈不挠的抗争精神；作为新时代青少年，我们要勿忘国耻、努力学习，为中华民族伟大复兴而奋斗。（答出任意3点，言之有理即可）（3分）' },
+  { subj: 'h', q: '小论文：结合中国近代化探索的历程，以“近代中国人向西方学习步步深入”为题，写一篇80-120字的小短文。（要求：观点明确，史实准确，条理清晰）',
+    mat: '提示材料：洋务运动学习西方先进技术；戊戌变法学习西方政治制度（君主立宪）；辛亥革命学习西方政治制度（民主共和）；新文化运动学习西方思想文化。',
+    think: [
+      ['第一步·定观点', '题目已给观点方向："向西方学习步步深入"——开头直接亮出：近代中国人向西方学习经历了由浅入深、由表及里、层层递进的过程。'],
+      ['第二步·按"器物→制度→思想"排史实', '每个史实一句话：洋务运动（技术）→戊戌变法、辛亥革命（制度）→新文化运动（思想文化）。顺序不能乱，顺序本身就是"步步深入"的论证。'],
+      ['第三步·结论回扣', '综上所述句式收尾，点明"层层深入"即可。注意字数限制，史实写"时间+事件+学什么"就够。']
+    ],
+    ans: '【参考范文】\n近代中国人向西方学习步步深入。鸦片战争后，洋务派掀起洋务运动，学习西方先进技术，创办军事和民用工业；甲午战败后，资产阶级维新派发动戊戌变法，革命派领导辛亥革命，学习西方政治制度，推翻了清王朝，建立了中华民国；辛亥革命后，陈独秀等发起新文化运动，学习西方民主与科学思想，解放了人们的思想。综上所述，近代中国人向西方学习经历了从器物到制度再到思想文化的层层深入过程。（约120字）' },
+  { subj: 's', q: '辨析题：有同学认为“网络是虚拟空间，想说什么就说什么，不用承担责任”。请运用所学知识加以辨析。（6分）',
+    mat: '（无材料，直接辨析观点）',
+    think: [
+      ['第一步·判断（1分）', '完整句式："这一观点是错误的。"（若观点对一半，如"网络丰富了生活，所以可以随心所欲"——用"片面的"）。'],
+      ['第二步·说理（3分，两个角度）', '①课本知识点：恪守道德、遵守法律是网络生活的基本准则；网络不是法外之地，公民在网上发表言论同样要遵守法律。②结合材料反驳：网上造谣、辱骂他人同样侵犯他人合法权益，要承担法律责任。'],
+      ['第三步·做法（2分）', '"因此，我们应该……"：提高媒介素养，文明上网，不信谣不传谣，传播网络正能量。']
+    ],
+    ans: '【参考答案】\n这一观点是错误的。（1分）\n网络是虚拟空间，但运用网络空间的主体是现实的。恪守道德、遵守法律是网络生活的基本准则，网络不是法外之地，公民在网上发表言论同样要遵守法律法规，不得损害国家、社会、集体利益和其他公民的合法权利。（3分）\n因此，我们应该提高媒介素养，文明上网、理性表达，不信谣、不传谣，自觉抵制不良信息，传播网络正能量。（2分）' },
+  { subj: 's', q: '实践探究题：学校开展“国家安全教育日”主题活动。假如你是宣传员，请完成：（1）为什么说“国家安全，人人有责”？（4分）（2）作为中学生，我们可以为维护国家安全做些什么？（4分）',
+    mat: '（活动背景略）',
+    think: [
+      ['第(1)问·"为什么"题答两层', '①国家安全的重要性（课本原句：国家安全是国家生存与发展的重要保障，是人民幸福安康的前提）；②国家利益与人民利益的关系（国家利益是人民利益的集中表现；维护国家安全是每个公民的法定义务）。'],
+      ['第(2)问·主体分析法之"青少年两件套"', '意识上：树立国家安全利益高于一切的观念，增强国家安全意识。行动上：学习国家安全知识并积极宣传；保守国家秘密，不非法传播涉密信息；发现危害国家安全的行为及时举报（12339）；配合国家安全机关工作。答4分就写4点，一点一分。'],
+      ['提分细节', '做法类题目最忌空喊"我们要爱国"。每一点都要<b>具体可操作</b>，写"拨打12339举报"比写"坚决维护"得分更稳。']
+    ],
+    ans: '【参考答案】\n（1）①国家安全是国家生存与发展的重要保障，是人民幸福安康的前提；②国家利益是人民利益的集中表现，国家安全与每个人息息相关；③维护国家安全是每个公民的法定义务。（答出任意2点，4分）\n（2）①树立国家安全利益高于一切的观念，增强国家安全意识；②认真学习国家安全知识，积极宣传国家安全法律法规；③保守国家秘密，不随意拍摄、传播涉军涉密信息；④发现危害国家安全的行为，及时向国家安全机关举报（12339）。（答出任意4点，4分）' }
+];
+
+let reviewTab = 'plan';
+function renderReview() {
+  setHdr('📝 复习规划');
+  let h = `<div class="rv-tabs">
+    <button data-t="plan" class="${reviewTab === 'plan' ? 'on' : ''}">🗓️ 复习计划</button>
+    <button data-t="method" class="${reviewTab === 'method' ? 'on' : ''}">🧠 大题方法</button>
+    <button data-t="essay" class="${reviewTab === 'essay' ? 'on' : ''}">📄 大题示范</button>
+  </div>`;
+  if (reviewTab === 'plan') {
+    REVIEW_PLAN.forEach(p => {
+      const allDone = p.weeks.every(w => save.plan[w.id]);
+      h += `<div class="phase-card ${allDone ? '' : 'now'}">
+        <div class="phase-head">${p.ph} ${allDone ? '<span class="ph-badge" style="background:#22c55e;color:#fff">已完成</span>' : ''}</div>
+        <div class="phase-goal">🎯 ${p.goal}</div>`;
+      p.weeks.forEach(w => {
+        const done = !!save.plan[w.id];
+        h += `<div class="week-item ${done ? 'done' : ''}" data-w="${w.id}">
+          <div class="wk-check">${done ? '✓' : ''}</div>
+          <div><div class="wk-title">${w.t}</div><div class="wk-desc">${w.d}</div></div>
+        </div>`;
+      });
+      h += `</div>`;
+    });
+    h += `<div class="hint" style="margin-top:14px">💡 点一下周卡就是打卡（可取消）。建议每周日检查：章节数是否三星、错题本是否清零。</div>`;
+  } else if (reviewTab === 'method') {
+    REVIEW_METHODS.forEach(m => {
+      h += `<div class="method-card ${m.blue ? 'blue' : ''}">
+        <h4>${m.ico} ${m.title} <span class="mtag">${m.tag}</span></h4>`;
+      m.steps.forEach((st, i) => {
+        h += `<div class="method-step"><div class="ms-no">${i + 1}</div><div><div class="ms-t">${st.t}</div><div class="ms-d">${st.d}</div></div></div>`;
+      });
+      if (m.tpl) h += `<div class="tpl">${m.tpl}</div>`;
+      h += `</div>`;
+    });
+  } else {
+    REVIEW_ESSAYS.forEach((e, idx) => {
+      h += `<div class="essay-card">
+        <div class="essay-q">${e.subj === 'h' ? '📜 历史 · ' : '⚖️ 道法 · '}${e.q}</div>
+        ${e.mat ? `<div class="essay-mat">${e.mat}</div>` : ''}`;
+      h += `<div style="margin-top:8px">`;
+      e.think.forEach(t => {
+        h += `<div class="think-line"><span class="tl-no">💡</span><span>${t[0]}：${t[1]}</span></div>`;
+      });
+      h += `</div>
+        <button class="essay-toggle" data-e="${idx}">👁 点开对照参考答案</button>
+        <div class="essay-body" id="essayBody${idx}"><div class="ans-block">${e.ans}</div></div>
+      </div>`;
+    });
+    h += `<div class="hint" style="margin-top:14px">💡 正确用法：先遮住答案自己写一遍，再点开对照——对照时重点看<b>结构和术语</b>，不必逐字背诵。</div>`;
+  }
+  $('#vReview').innerHTML = h;
+  $$('#vReview .rv-tabs button').forEach(b => b.onclick = () => { sfx('click'); reviewTab = b.dataset.t; renderReview(); });
+  $$('#vReview .week-item').forEach(el => el.onclick = () => {
+    sfx('click');
+    const id = el.dataset.w;
+    if (save.plan[id]) delete save.plan[id];
+    else { save.plan[id] = 1; toast('✅ 打卡成功，坚持就是胜利！'); }
+    persist();
+    renderReview();
+  });
+  $$('#vReview .essay-toggle').forEach(b => b.onclick = () => {
+    sfx('click');
+    const body = $('#essayBody' + b.dataset.e);
+    if (body) {
+      body.classList.toggle('open');
+      b.textContent = body.classList.contains('open') ? '🙈 收起参考答案' : '👁 点开对照参考答案';
+    }
+  });
+}
 
 /* ==================== 启动 ==================== */
 renderHome();
