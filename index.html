@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<script src="gate.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>小张游戏厅</title>
@@ -113,7 +114,22 @@
     <div class="go">›</div>
   </a>
 
-  <div class="foot">数据保存在你自己的手机上<br>把链接分享给朋友，随时开玩 🎉</div>
+  <div class="foot">
+    数据保存在你自己的手机上<br>
+    把链接分享给朋友，随时开玩 🎉<br>
+    <button id="btnLock" style="margin-top:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);color:#9db1d6;font-size:12px;padding:7px 14px;border-radius:999px;cursor:pointer;font-family:inherit;">🔒 锁定本设备（退出验证）</button>
+  </div>
+  <script>
+    (function () {
+      var b = document.getElementById('btnLock');
+      if (!b) return;
+      b.addEventListener('click', function () {
+        if (typeof window.xzLock === 'function') window.xzLock();
+        else { try { localStorage.removeItem('xz_gate_v1'); } catch (e) {} location.reload(); }
+      });
+    })();
+  </script>
+
 </div>
 </body>
 </html>
