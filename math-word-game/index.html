@@ -766,6 +766,23 @@ function saveCoins() {
   // 特遣车库卡同步刷新（复用主页初始化的同一函数）
   if (typeof refreshGarageCard === 'function') refreshGarageCard();
 }
+/* ---- 共享货币池实时同步（防止页面停留导致旧值覆盖王牌消费结果） ---- */
+function sharedCoins() {
+  const v = parseInt(localStorage.getItem('xb_coins') || 'NaN', 10);
+  return isNaN(v) ? null : v;
+}
+function syncCoins() {
+  const v = sharedCoins();
+  if (v !== null) state.coins = v;
+  document.getElementById('totalCoins').textContent = state.coins;
+  if (typeof refreshGarageCard === 'function') refreshGarageCard();
+  return state.coins;
+}
+function addCoins(n) {
+  const v = sharedCoins();
+  state.coins = (v !== null ? v : state.coins) + n;
+  saveCoins();
+}
 function updateStreak(isCorrect) {
   state.streak = isCorrect ? state.streak + 1 : 0;
   document.getElementById('streakCount').textContent = state.streak;
@@ -1524,8 +1541,7 @@ function handleAnswer(btn, chosen, correct) {
   // 奖励结算（普通+5 / 真题×2 / 压轴×4）与特效（q 在此已定义）
   const reward = q.coinReward || 5;
   if (isCorrect) {
-    state.coins += reward;
-    saveCoins();
+    addCoins(reward);
     if (q.boss) {
       const runner = document.getElementById('runnerIcon');
       runner.classList.remove('gold-flash'); void runner.offsetWidth; runner.classList.add('gold-flash');
@@ -1560,8 +1576,7 @@ function finishGame() {
 
   let bonus = state.correctCount * 5;
   if (state.correctCount === state.totalQ) { bonus += 25; sfx.win(); }
-  state.coins += bonus;
-  saveCoins();
+  addCoins(bonus);
 
   // 真题战神徽章：一轮全对且压轴挑战答对
   const bossQ = state.questions.some(q => q.boss);
@@ -1596,6 +1611,16 @@ function finishGame() {
 
   showPanel('panelResult');
 }
+
+/* ---- 共享军饷实时同步：切回本页 / 别的标签页改动 xb_coins 时自动刷新 ---- */
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible') syncCoins();
+});
+window.addEventListener('focus', syncCoins);
+window.addEventListener('storage', function (e) {
+  if (e && e.key === 'xb_coins') syncCoins();
+});
+syncCoins();
 </script>
 
 </body>

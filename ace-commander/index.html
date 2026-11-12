@@ -460,6 +460,23 @@ function saveState() {
   } catch(e){}
 }
 
+/* ---- 共享货币池实时同步（防止页面停留导致旧值覆盖/误判） ---- */
+function sharedCoins() {
+  const v = parseInt(localStorage.getItem('xb_coins') || 'NaN', 10);
+  return isNaN(v) ? null : v;
+}
+function syncCoins() {
+  const v = sharedCoins();
+  if (v !== null) S.coins = v;
+  return S.coins;
+}
+function addCoins(n) {
+  const v = sharedCoins();
+  S.coins = (v !== null ? v : S.coins) + n;
+  saveState();
+  renderHud();
+}
+
 /* ================= 音效合成（Web Audio 零依赖） ================= */
 let AC = null;
 function getAC() {
@@ -682,11 +699,9 @@ $('btnLaunchFormula').onclick = () => {
     playSound('launch');
     setTimeout(() => playSound('correct'), 300);
 
-    S.coins += 20;
     S.streak += 1;
     S.totalAnswered += 1;
-    saveState();
-    renderHud();
+    addCoins(20);
 
     $('modalTitle').textContent = '🎉 调度精准！特遣队全速出击！';
     $('modalTitle').className = 'modal-title succ';
@@ -806,6 +821,7 @@ function renderHangar() {
         renderHangar();
         renderHud();
       } else {
+        syncCoins();  // 关键：判定前先读共享池最新军饷，避免页面停留导致旧值误判
         if(S.coins >= v.cost) {
           // 两段式确认：首次点击提示，再次点击才扣军饷（替代原生 confirm，手机端更友好）
           if(card.__confirm) {
@@ -866,6 +882,25 @@ window.setHangarTab = (type) => {
   renderHangar();
 };
 renderHud();
+
+/* ---- 共享军饷实时同步：切回本页 / 别的标签页改动 xb_coins 时自动刷新 ---- */
+function onSharedCoinsChanged() {
+  const before = S.coins;
+  syncCoins();
+  if (S.coins !== before) {
+    renderHud();
+    if (typeof aceToast === 'function' && S.coins > before) {
+      aceToast('💰 军饷已同步：+' + (S.coins - before) + '（来自学霸小勇士）');
+    }
+  }
+}
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible') onSharedCoinsChanged();
+});
+window.addEventListener('focus', onSharedCoinsChanged);
+window.addEventListener('storage', function (e) {
+  if (e && e.key === 'xb_coins') onSharedCoinsChanged();
+});
 })();
 </script>
 </body>
