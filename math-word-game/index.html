@@ -746,7 +746,7 @@ document.getElementById('totalCoins').textContent = state.coins;
 function refreshGarageCard() {
   const garageEl = document.getElementById('garageEntry');
   if (garageEl && !garageEl.onclick) {
-    garageEl.onclick = () => { window.location.href = 'ace-commander/index.html'; };
+    garageEl.onclick = () => { window.location.href = '../ace-commander/index.html'; };
   }
   const gc = document.getElementById('garageDesc');
   if (gc) {
