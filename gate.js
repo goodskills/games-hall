@@ -19,6 +19,53 @@
   var MAX_TRY = 5;
   var BAN_MS = 30 * 1000;
 
+  /* ---------- 路径自愈 + 链接基址加固 ----------
+     作用：即便用户停在 CF 回退出来的"假深路径"上（如 /math-word-game/ace-commander/），
+     也不会出现"点任何游戏都停在游戏厅主页"的死循环。
+     ① 假深路径 → 自动重定向到正确目录
+     ② 游戏厅卡片链接统一改写为「按站点根计算」的绝对路径（线上根=/，本地子目录也正确）
+  ------------------------------------------------------------ */
+  var KNOWN_DIRS = ['ace-commander', 'math-word-game', 'mountain-run', 'xiaozhang-rpg',
+                    'memory-game', 'zuma-game', 'shifa-game', 'legend'];
+  (function selfHealPath() {
+    try {
+      var path = location.pathname;
+      var seg = path.replace(/^\/+/, '').split('/').filter(Boolean);
+      if (seg.length > 2 && KNOWN_DIRS.indexOf(seg[0]) >= 0) {
+        location.replace('/' + seg.slice(0, seg.indexOf('games-hall') >= 0 ? 2 : 1).join('/') + '/');
+        return;
+      }
+      if (seg.length === 1 && seg[0] !== 'games-hall' && KNOWN_DIRS.indexOf(seg[0]) < 0 &&
+          !/\.(html|js|css|jpg|jpeg|png|json|ico|svg|woff2?)$/i.test(path)) {
+        // 不存在的单段路径被回退成游戏厅首页 → 拉回真正的游戏厅根
+        if ((document.title || '').indexOf('游戏厅') >= 0) location.replace('/');
+      }
+    } catch (e) {}
+  })();
+
+  /* 计算游戏厅根路径：线上 '/' ；本地子目录部署（如 /games-hall/）自动识别 */
+  function arcadeRoot() {
+    try {
+      var seg = location.pathname.replace(/^\/+/, '').split('/').filter(Boolean);
+      if (seg[0] === 'games-hall') return '/games-hall/';
+      return '/';
+    } catch (e) { return '/'; }
+  }
+  function normalizeCardLinks() {
+    try {
+      var root = arcadeRoot();
+      var cards = document.querySelectorAll('a.card[href]');
+      for (var i = 0; i < cards.length; i++) {
+        var h = cards[i].getAttribute('href');
+        if (h && !/^(https?:|\/\/|\/|#|data:)/.test(h)) {
+          cards[i].setAttribute('href', root + h);
+        }
+      }
+    } catch (e) {}
+  }
+
+
+
   /* ---------- 内置 SHA-256（不依赖 crypto.subtle，file:// 和局域网 http 也能用） ---------- */
   function sha256(ascii) {
     function rightRotate(v, a) { return (v >>> a) | (v << (32 - a)); }
@@ -200,12 +247,29 @@
   }
 
   /* ---------- 启动 ---------- */
-  if (isUnlocked()) {
-    // 已解锁：清理可能残留的状态
-    root.classList.remove('xzg-pending', 'xzg-locked');
-  } else if (document.body) {
-    buildGate();
-  } else {
-    document.addEventListener('DOMContentLoaded', buildGate);
+  try {
+    if (isUnlocked()) {
+      // 已解锁：清理可能残留的状态
+      root.classList.remove('xzg-pending', 'xzg-locked');
+    } else if (document.body) {
+      buildGate();
+    } else {
+      document.addEventListener('DOMContentLoaded', buildGate);
+    }
+    // 卡片链接基址加固（无论是否已解锁都要做）
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', normalizeCardLinks);
+    } else {
+      normalizeCardLinks();
+    }
+  } catch (e) {
+    /* 兜底：验证门自身出错时，绝不把页面锁死 —— 保持页面可见可点 */
+    try {
+      document.documentElement.classList.remove('xzg-pending', 'xzg-locked');
+      var bad = document.getElementById('xzgStyle');
+      if (bad) bad.parentNode.removeChild(bad);
+      var g2 = document.getElementById('xzGate');
+      if (g2) g2.parentNode.removeChild(g2);
+    } catch (e2) {}
   }
 })();
