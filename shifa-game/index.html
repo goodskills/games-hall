@@ -225,6 +225,11 @@
   .rep-bar i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #22c55e, #4ade80); }
   .rep-bar i.low { background: linear-gradient(90deg, #ef4444, #f87171); }
   .rep-bar i.mid { background: linear-gradient(90deg, #d4a44c, #facc15); }
+  .codebox {
+    width: 100%; box-sizing: border-box; height: 96px; padding: 10px 12px; border-radius: 10px;
+    background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.15); color: #7dd3fc;
+    font-size: 10px; line-height: 1.5; word-break: break-all; resize: none; font-family: monospace;
+  }
 
   /* ---------- 复习规划 ---------- */
   .rv-tabs { display: flex; gap: 8px; margin-top: 12px; }
@@ -1302,11 +1307,26 @@ function renderCards() {
 }
 
 /* ==================== 学习报告 ==================== */
+/* 复习计划周次映射：起始 2026-11-09，每周 7 天，w1..w10 依次推进
+   （⚠️ 必须定义在 REVIEW_PLAN 之后 —— PLAN_FLAT 顶层 IIFE 立即执行会读它，TDZ） */
+let planStatus = function () { return null; };  // 占位，REVIEW_PLAN 定义后重写
+function planCurrentIndexSafe() {
+  const days = Math.floor((Date.now() - new Date('2026-11-09T00:00:00').getTime()) / 86400000);
+  return Math.max(0, Math.min(9, Math.floor(days / 7)));
+}
+
 function renderReport() {
   setHdr('📊 学习报告');
   const r = rankOf();
+  const ps = planStatus();
+  const planDone = ps.cur.id && save.plan[ps.cur.id] ? '✅ 本周已打卡' : '⬜ 本周未打卡';
   let h = `<div class="hero" style="padding:18px">
     <div class="rank-row" style="margin-top:0">${r.i} <b>${r.n}</b> · 经验 <b>${save.exp}</b></div>
+  </div>
+  <div class="phase-card ${ps.status.cls === 'low' ? 'now' : ''}">
+    <div class="phase-head">🗓️ 复习计划对照 <span class="ph-badge" style="background:${ps.status.cls === 'low' ? '#f87171' : ps.status.cls === 'mid' ? '#facc15' : '#22c55e'};color:#0a0f1e">${ps.status.tag}</span></div>
+    <div class="phase-goal">今天应处于：<b style="color:#f5d08a">${ps.cur.t}</b><br>${planDone} · ${ps.status.msg}</div>
+    <div class="phase-goal">计划应过关 ${ps.due.length} 章 → 已练 ${ps.practiced.length} 章，三星 ${ps.starred.length} 章</div>
   </div>
   <div class="stat-row">
     <div class="stat-cell"><b>${acc()}%</b><span>总正确率</span></div>
@@ -1320,8 +1340,9 @@ function renderReport() {
       const cc = save.chCorrect[k] || 0, ct = save.chTotal[k] || 0;
       const rate = ct ? Math.round(cc * 100 / ct) : 0;
       const cls = !ct ? '' : rate >= 80 ? '' : rate >= 60 ? 'mid' : 'low';
+      const isDue = ps.due.indexOf(k) >= 0;
       h += `<div class="rep-row">
-        <div class="rep-head"><span>${c.no}. ${c.title}</span><b>${ct ? rate + '%（' + cc + '/' + ct + '）' : '未练习'}</b></div>
+        <div class="rep-head"><span>${c.no}. ${c.title}${isDue ? ' <span style="color:#facc15;font-size:10px">📌计划内</span>' : ''}</span><b>${ct ? rate + '%（' + cc + '/' + ct + '）' : '未练习'}</b></div>
         <div class="rep-bar"><i class="${cls}" style="width:${rate}%"></i></div>
       </div>`;
     });
@@ -1330,7 +1351,39 @@ function renderReport() {
   ['h', 's', 'both'].forEach(k => {
     h += `<div class="rep-row"><div class="rep-head"><span>${MOCKS[k].name}</span><b>${(save.mockBest[k] || 0) + ' 分'}</b></div></div>`;
   });
+  h += `<div class="sec-title">📤 进度导出码（发给家长/老师）</div>
+  <div style="display:grid;gap:8px;margin-top:8px">
+    <button class="btn primary" id="genCodeBtn">生成进度码</button>
+    <textarea id="codeBox" class="codebox" readonly placeholder="点上方按钮生成一串进度码，复制发给爸爸妈妈，就能远程看到你的复习进度啦"></textarea>
+    <button class="btn" id="copyCodeBtn" style="display:none">📋 复制进度码</button>
+  </div>
+  <div class="hint" style="margin-top:10px">💡 进度码包含闯关进度/正确率/错题/模拟卷成绩/打卡记录，不含任何个人信息</div>`;
   $('#vReport').innerHTML = h;
+  const gb = document.getElementById('genCodeBtn');
+  if (gb) gb.onclick = () => {
+    sfx('click');
+    try {
+      const payload = JSON.stringify({ t: Date.now(), v: 1, s: save });
+      const code = 'SHIFA1|' + btoa(unescape(encodeURIComponent(payload)));
+      const box = document.getElementById('codeBox');
+      box.value = code;
+      const cb = document.getElementById('copyCodeBtn');
+      cb.style.display = 'grid';
+      cb.onclick = () => {
+        try {
+          navigator.clipboard.writeText(code).then(() => toast('✅ 已复制，发给爸爸妈妈吧！')).catch(() => {
+            box.select();
+            document.execCommand('copy');
+            toast('✅ 已复制，发给爸爸妈妈吧！');
+          });
+        } catch (e) {
+          box.select();
+          try { document.execCommand('copy'); toast('✅ 已复制！'); } catch (e2) { toast('请长按文本框手动复制'); }
+        }
+      };
+      toast('✅ 进度码已生成');
+    } catch (e) { toast('生成失败：' + e.message); }
+  };
 }
 
 /* ==================== 导航 ==================== */
@@ -1439,6 +1492,34 @@ const REVIEW_ESSAYS = [
 ];
 
 let reviewTab = 'plan';
+
+/* 复习计划周次映射（起始 2026-11-09，每周 7 天）—— 依赖 REVIEW_PLAN，故在此定义 */
+const PLAN_DUE = { w1: ['h1','h2'], w2: ['h3','h4'], w3: ['h5'], w4: ['h6'], w5: ['h7','h8'], w6: ['d1','d2','d3','d4'], w7: [], w8: [], w9: [], w10: [] };
+const PLAN_FLAT = (() => {
+  const arr = [];
+  REVIEW_PLAN.forEach(p => p.weeks.forEach(w => arr.push(w)));
+  return arr;
+})();
+function planCurrentIndex() {
+  const days = Math.floor((Date.now() - new Date('2026-11-09T00:00:00').getTime()) / 86400000);
+  return Math.max(0, Math.min(PLAN_FLAT.length - 1, Math.floor(days / 7)));
+}
+planStatus = function () {
+  const idx = planCurrentIndex();
+  const cur = PLAN_FLAT[idx] || PLAN_FLAT[0];
+  let due = [];
+  for (let i = 0; i <= idx; i++) { due = due.concat(PLAN_DUE[PLAN_FLAT[i].id] || []); }
+  const practiced = due.filter(k => (save.chTotal[k] || 0) > 0);
+  const starred = due.filter(k => (save.stars[k] || 0) >= 1);
+  let status;
+  if (practiced.length === 0) status = { tag: '落后', cls: 'low', msg: '本周应复习的章节还没开始，建议今天补上' };
+  else if (starred.length >= due.length) {
+    const ahead = Object.keys(CHAPTERS).filter(k => due.indexOf(k) < 0 && (save.chTotal[k] || 0) > 0).length;
+    status = ahead > 0 ? { tag: '超前', cls: '', msg: '计划内章节全部过关，还提前学了 ' + ahead + ' 章，很棒！' }
+                       : { tag: '正常', cls: '', msg: '计划内章节全部过关，节奏刚好' };
+  } else status = { tag: '进行中', cls: 'mid', msg: '已练 ' + practiced.length + '/' + due.length + ' 章，继续加油' };
+  return { idx, cur, due, practiced, starred, status };
+};
 function renderReview() {
   setHdr('📝 复习规划');
   let h = `<div class="rv-tabs">
